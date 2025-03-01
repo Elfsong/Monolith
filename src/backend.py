@@ -8,8 +8,10 @@ import uuid
 import queue
 import logging
 import threading
+import collections
 from llm_sandbox import SandboxSession
 from flask import Flask, request, jsonify
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 # Create a Flask app
 app = Flask(__name__)
@@ -18,10 +20,11 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 class Manager:
-    def __init__(self):
-        self.task_queue = queue.Queue()
-        self.task_results = {}
+    def __init__(self, queue_size, result_size):
+        self.task_queue = queue.Queue(maxsize=queue_size)
+        self.task_results = collections.OrderedDict()
         self.task_results_lock = threading.Lock()
+        self.result_size = result_size
 
         app.logger.info('=============================================')
         app.logger.info('[+] Creating Workers...')
@@ -32,8 +35,13 @@ class Manager:
         app.logger.info('[+] Workers are ready to work.')
         app.logger.info('[+] Manager is ready to accept tasks.')
         app.logger.info('=============================================')
+    
+    def task_clean(self) -> None:
+        with self.task_results_lock:
+            while len(self.task_results) >= self.result_size:
+                self.task_results.popitem(last=False)
 
-    def task_assign(self, worker_id):
+    def task_assign(self, worker_id) -> None:
         app.logger.debug(f'[-] Worker-{worker_id} is ready to work.')
         while True:
             task_id, input_dict = self.task_queue.get()
@@ -43,14 +51,14 @@ class Manager:
                 'worker_id': worker_id,
                 'timestamp': time.time(),
                 'status': 'processing',
-                'result': None
+                'output_dict': None
             }
             app.logger.debug(f'[-] Worker-{worker_id} is processing task-{task_id}...')
             try:
-                result = self.task_process(input_dict)
                 with self.task_results_lock:
-                    task_result['status'] = 'done'
-                    task_result['result'] = result
+                    self.task_results[task_id] = task_result
+                self.task_process(worker_id, input_dict, task_result)
+                with self.task_results_lock:
                     self.task_results[task_id] = task_result
             except Exception as e:
                 with self.task_results_lock:
@@ -58,15 +66,33 @@ class Manager:
                     task_result['result'] = f"Error: {str(e)}"
                     self.task_results[task_id] = task_result
             finally:
+                self.task_clean()
                 self.task_queue.task_done()
 
 
-    def task_process(self, input_dict):
-        output = None
-        code = input_dict['code']
-        with SandboxSession(lang="python", verbose=False, container_configs={"cpuset_cpus": "7", "mem_limit": "1g"}) as session:
-            output = session.run(code=code, run_memory_profile=True)
-        return output
+    def task_process(self, worker_id: int, input_dict, task_result) -> None:
+        try:
+            code = input_dict['code']
+            libraries = input_dict.get('libraries', None)
+            language = input_dict['language']
+            timeout = min(input_dict.get('timeout', 60), 60)
+
+            with SandboxSession(lang=language, verbose=False, container_configs={"cpuset_cpus": str(worker_id), "mem_limit": "1g"}) as session:
+                def setup_and_run():
+                    session.setup(libraries=libraries)
+                    return session.run(code=code, run_memory_profile=True)
+            
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(setup_and_run)
+                    try:
+                        task_result['output_dict'] = future.result(timeout=timeout)
+                        task_result['status'] = 'done'
+                    except TimeoutError:
+                        task_result['status'] = 'timeout'
+                        task_result['output_dict'] = {'error': 'Timeout reached.'}
+        except Exception as e:
+            task_result['status'] = 'error'
+            task_result['output_dict'] = {'error': str(e)}
     
 
 @app.route('/execute', methods=['POST'])
@@ -77,12 +103,15 @@ def handle_execute():
         return jsonify({'error': 'No code provided'}), 400
 
     uuid_str = str(uuid.uuid4())
-    app.manager.task_queue.put((uuid_str, input_dict))
-    app.logger.info(f'[+] Task [{uuid_str}] is added to the task queue.')
+    try:
+        app.manager.task_queue.put_nowait((uuid_str, input_dict))
+        app.logger.info(f'[+] Task [{uuid_str}] is added to the task queue.')
+    except queue.Full:
+        return jsonify({'error': 'Task queue is full'}), 503
 
     return jsonify({'task_id': uuid_str}), 200
 
-@app.route('/result/<task_id>', methods=['GET'])
+@app.route('/results/<task_id>', methods=['GET'])
 def get_result(task_id):
     app.logger.info(f'[+] Received a result request: [{task_id}]')
     with app.manager.task_results_lock:
@@ -90,12 +119,12 @@ def get_result(task_id):
     
     if result is None:
         return jsonify({'error': 'Task not found'}), 404
-    if result['status'] == 'done':
+    if result['status'] != 'processing':
         app.manager.task_results.pop(task_id)
     
     return jsonify(result), 200
     
 if __name__ == '__main__':
-    app.manager = Manager()
+    app.manager = Manager(queue_size=32, result_size=1024)
     app.run(debug=True)
     
