@@ -130,7 +130,7 @@ def get_result(task_id):
 
 @app.route('/')
 def index():
-    return jsonify({"hello": "world"}), 200
+    return redirect("https://huggingface.co/spaces/Elfsong/Monolith", code=302)
     
 if __name__ == '__main__':
     app.run(port=8000, debug=False)
