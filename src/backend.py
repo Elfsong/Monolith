@@ -10,14 +10,14 @@ import logging
 import threading
 import collections
 from llm_sandbox import SandboxSession
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 # Create a Flask app
-app = Flask(__name__)
+
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename='monolith.log', filemode='a')
 
 class Manager:
     def __init__(self, queue_size, result_size):
@@ -95,7 +95,9 @@ class Manager:
         except Exception as e:
             task_result['status'] = 'error'
             task_result['output_dict'] = {'error': str(e)}
-    
+
+app = Flask(__name__)
+app.manager = Manager(queue_size=32, result_size=1024)
 
 @app.route('/execute', methods=['POST'])
 def handle_execute():
@@ -125,8 +127,11 @@ def get_result(task_id):
         app.manager.task_results.pop(task_id)
     
     return jsonify(result), 200
+
+@app.route('/')
+def index():
+    return jsonify({"hello": "world"}), 200
     
 if __name__ == '__main__':
-    app.manager = Manager(queue_size=32, result_size=1024)
-    app.run(port=4096, debug=True)
+    app.run(port=8000, debug=False)
     

@@ -5,13 +5,32 @@
 
 import time
 import utils
-import threading
+import requests
 import pandas as pd
 import streamlit as st
 from code_editor import code_editor
 
+lang_map = {
+    "Python": ["python", "python", "# Don't Worry, You Can't Break It. We Promise.\n"],
+    "CPP": ["c_cpp", "cpp", "// Don't Worry, You Can't Break It. We Promise.\n// For Cpp, please make sure the program lasts at least 1 ms.\n"],
+    "Java": ["java", "java", "// Don't Worry, You Can't Break It. We Promise.\n"],
+    "JavaScript": ["javascript", "javascript", "// Don't Worry, You Can't Break It. We Promise.\n"],
+    "Golang": ["golang", "go", "// Don't Worry, You Can't Break It. We Promise.\n"]
+}
+
+def post_task(lang, code, libs=None, timeout=30, memory_profile=False):
+    url = 'https://monolith.cool/execute'
+    data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout, 'run_memory_profile': memory_profile}
+    response = requests.post(url, json=data)
+    return response.json()
+
+def get_result(task_id):
+    url = f'https://monolith.cool/results/{task_id}'
+    response = requests.get(url)
+    return response.json()
+
 # Title
-st.title("_Mono:blue[lith]_")
+st.title("_Monolith_ is :blue[cool]")
 
 # Language
 lang = st.selectbox("Language?", utils.lang_map.keys(), help="the language for submission.")
@@ -23,6 +42,9 @@ libraries = [lib.strip() for lib in lib_str.split(",")] if lib_str else None
 
 # Memory Profile
 memory_profile = st.checkbox("Memory Profile?", help="Enable memory profiling for the code execution.")
+
+# Timeout
+timeout = st.number_input("Timeout?", min_value=1, max_value=120, value=30, help="the maximum time allowed for execution.")
 
 # Code Editor
 editor_buttons = [{
@@ -36,8 +58,6 @@ editor_buttons = [{
 }]
 code_prompt = utils.lang_map[lang][2]
 response_dict = code_editor(code_prompt, lang=utils.lang_map[lang][0], height=[15,15], options={"wrap": False}, buttons=editor_buttons)
-
-timeout = 30
 
 if response_dict['type'] == 'submit':
     code = response_dict['text']
@@ -65,6 +85,7 @@ if response_dict['type'] == 'submit':
             st.write(f"**Execution Time:** :blue[{response['output_dict']['duration']}] ms, **Peak Memory:** :blue[{response['output_dict']['peak_memory']}] kb, **Integral:** :blue[{response['output_dict']['integral']}] kb*ms")
             st.area_chart(pd.DataFrame(response['output_dict']['log'], columns=["timestemp", "memory"]), x='timestemp', y='memory')
         else:
-            st.write(response)
+            st.write(f"**Elapsed Time:** :blue[{response['output_dict']['time_v']['elapsed_time_seconds']}], **System Time:** :blue[{response['output_dict']['time_v']['system_time']}], **User Time:** :blue[{response['output_dict']['time_v']['user_time']}], **Peak Memory:** :blue[{response['output_dict']['time_v']['max_resident_set_kb']}] kb")
+
     else:
         st.error(response)
