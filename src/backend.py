@@ -75,11 +75,12 @@ class Manager:
             code = input_dict['code']
             libraries = input_dict.get('libraries', None)
             language = input_dict['language']
-            timeout = min(input_dict.get('timeout', 60), 60)
+            timeout = min(input_dict.get('timeout', 30), 120)
 
             with SandboxSession(lang=language, verbose=False, container_configs={"cpuset_cpus": str(worker_id), "mem_limit": "1g"}) as session:
                 def setup_and_run():
-                    session.setup(libraries=libraries)
+                    if libraries:
+                        session.setup(libraries=libraries)
                     return session.run(code=code, run_memory_profile=True)
             
                 with ThreadPoolExecutor(max_workers=1) as executor:
@@ -100,14 +101,14 @@ def handle_execute():
     input_dict = request.get_json()
     app.logger.debug(f'[+] Received an execute request: {input_dict}')
     if not input_dict or 'code' not in input_dict:
-        return jsonify({'error': 'No code provided'}), 400
+        return jsonify({'error': 'No code provided', 'status': 'error'}), 400
 
     uuid_str = str(uuid.uuid4())
     try:
         app.manager.task_queue.put_nowait((uuid_str, input_dict))
         app.logger.info(f'[+] Task [{uuid_str}] is added to the task queue.')
     except queue.Full:
-        return jsonify({'error': 'Task queue is full'}), 503
+        return jsonify({'error': 'Task queue is full', 'status': 'error'}), 503
 
     return jsonify({'task_id': uuid_str}), 200
 
@@ -118,7 +119,7 @@ def get_result(task_id):
         result = app.manager.task_results.get(task_id)
     
     if result is None:
-        return jsonify({'error': 'Task not found'}), 404
+        return jsonify({'error': 'Task not found', 'status': 'error'}), 404
     if result['status'] != 'processing':
         app.manager.task_results.pop(task_id)
     
@@ -126,5 +127,5 @@ def get_result(task_id):
     
 if __name__ == '__main__':
     app.manager = Manager(queue_size=32, result_size=1024)
-    app.run(debug=True)
+    app.run(port=4096, debug=True)
     

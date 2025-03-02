@@ -13,6 +13,7 @@ from llm_sandbox.utils import (
     get_libraries_installation_command,
     get_code_file_extension,
     get_code_execution_command,
+    generate_memory_profiler_script
 )
 from llm_sandbox.base import Session, ConsoleOutput
 from llm_sandbox.const import (
@@ -188,27 +189,25 @@ class SandboxDockerSession(Session):
             )
 
         with tempfile.TemporaryDirectory() as directory_name:
-            code_file = os.path.join(directory_name, f"code.{get_code_file_extension(self.lang)}")
-            profiler_file = "/home/nus_cisco_wp1/Projects/llm-sandbox/memory_profiler.sh"
+            code_source_path = os.path.join(directory_name, f"code.{get_code_file_extension(self.lang)}")
+            profiler_source_path = './llm_sandbox/memory_profiler.sh'
             
             if self.lang == SupportedLanguage.GO:
-                code_dest_file = "/go_space/code.go"
+                code_dest_path = "/go_space/code.go"
             else:
-                code_dest_file = (
-                    f"/tmp/code.{get_code_file_extension(self.lang)}"  # code_file
+                code_dest_path = (
+                    f"/tmp/code.{get_code_file_extension(self.lang)}"
                 )
             profiler_dest_path = "/tmp/memory_profiler.sh"
 
-            with open(code_file, "w") as f:
+            with open(code_source_path, "w") as f:
                 f.write(code)
 
-            self.copy_to_runtime(code_file, code_dest_file)
-            if run_memory_profile:
-                self.copy_to_runtime(profiler_file, profiler_dest_path)
+            self.copy_to_runtime(code_source_path, code_dest_path)
+            self.copy_to_runtime(profiler_source_path, profiler_dest_path)
 
             output = ConsoleOutput()
-            code_compiled= False
-            commands = get_code_execution_command(self.lang, code_dest_file, run_memory_profile=run_memory_profile)
+            commands = get_code_execution_command(self.lang, code_dest_path, run_memory_profile=run_memory_profile)
             
             for index, command in enumerate(commands):
                 if self.lang == SupportedLanguage.GO:

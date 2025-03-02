@@ -4,6 +4,7 @@
 # Date: 2025-03-01
 
 import time
+import requests
 import threading
 
 lang_map = {
@@ -13,3 +14,14 @@ lang_map = {
     "JavaScript": ["javascript", "javascript", "// Don't Worry, You Can't Break It. We Promise.\n"],
     "Golang": ["golang", "go", "// Don't Worry, You Can't Break It. We Promise.\n"]
 }
+
+def post_task(lang, code, libs=None, timeout=30):
+    url = 'http://localhost:4096/execute'
+    data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout}
+    response = requests.post(url, json=data)
+    return response.json()
+
+def get_result(task_id):
+    url = f'http://localhost:4096/results/{task_id}'
+    response = requests.get(url)
+    return response.json()
