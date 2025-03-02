@@ -29,7 +29,7 @@ def get_result(task_id):
     return response.json()
 
 # Title
-st.title("_Monolith_ is :blue[cool]")
+st.title("_Monolith_ is :blue[cool] :sunglasses:")
 
 # Language
 lang = st.selectbox("Language?", lang_map.keys(), help="the language for submission.")
