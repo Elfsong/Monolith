@@ -92,17 +92,17 @@ def get_code_execution_command(lang: str, code_file: str, run_memory_profile: bo
             raise ValueError(f"Language {lang} is not supported")
     else:
         if lang == SupportedLanguage.PYTHON:
-            return [f"python {code_file}"]
+            return [f"/usr/bin/time -v python {code_file}"]
         elif lang == SupportedLanguage.JAVA:
-            return [f"java {code_file}"]
+            return [f"/usr/bin/time -v java {code_file}"]
         elif lang == SupportedLanguage.JAVASCRIPT:
-            return [f"node {code_file}"]
+            return [f"/usr/bin/time -v node {code_file}"]
         elif lang == SupportedLanguage.CPP:
-            return [f"g++ -o a.out {code_file}", "./a.out"]
+            return [f"/usr/bin/time -v g++ -o a.out {code_file}", "./a.out"]
         elif lang == SupportedLanguage.GO:
-            return [f"go run {code_file}"]
+            return [f"/usr/bin/time -v go run {code_file}"]
         elif lang == SupportedLanguage.RUBY:
-            return [f"ruby {code_file}"]
+            return [f"/usr/bin/time -v ruby {code_file}"]
         else:
             raise ValueError(f"Language {lang} is not supported")
     

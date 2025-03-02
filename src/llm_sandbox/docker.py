@@ -13,7 +13,7 @@ from llm_sandbox.utils import (
     get_libraries_installation_command,
     get_code_file_extension,
     get_code_execution_command,
-    generate_memory_profiler_script
+    parse_time_v_output
 )
 from llm_sandbox.base import Session, ConsoleOutput
 from llm_sandbox.const import (
@@ -217,8 +217,10 @@ class SandboxDockerSession(Session):
                     if self.verbose:
                         print(output.stdout)
                         print(output.stderr)
-                        
-            duration, peak_memory, integral, log = 0, 0, 0, list()
+
+            # Construct the response
+            response = {"stdout": output.stdout, "stderr": output.stderr, "peak_memory": 0, "integral": 0, "duration": 0, 'log': list()}
+
             if run_memory_profile:
                 log_path = os.path.join(directory_name, 'mem_usage.log')
                 if self.lang == SupportedLanguage.GO:
@@ -229,14 +231,20 @@ class SandboxDockerSession(Session):
                 with open(log_path, "r") as mem_profile:
                     for line in mem_profile.readlines():
                         timestamp, mem = line.split(" ")
-                        peak_memory = max(peak_memory, int(mem))
-                        integral += peak_memory
-                        log.append((int(timestamp), int(mem)))
-                    duration = (log[-1][0] - log[0][0]) / 1000000
+                        response['peak_memory'] = max(response['peak_memory'], int(mem))
+                        response['integral'] += response['peak_memory']
+                        response['log'].append((int(timestamp), int(mem)))
+                    response['duration'] = (response['log'][-1][0] - response['log'][0][0]) / 1000000
                 os.remove(log_path)
-                
-                
-            return {"stdout": output.stdout, "stderr": output.stderr, "peak_memory": peak_memory, "integral": integral, "duration": duration, 'log': log}
+            else:
+                try:
+                    time_v = parse_time_v_output(output.stderr)
+                    response['time_v'] = time_v
+                except Exception as e:
+                    time_v = None
+                    print(f"Error parsing time_v output: {e}")
+                    
+            return response
 
     def copy_from_runtime(self, src: str, dest: str):
         if not self.container:

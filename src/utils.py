@@ -15,9 +15,9 @@ lang_map = {
     "Golang": ["golang", "go", "// Don't Worry, You Can't Break It. We Promise.\n"]
 }
 
-def post_task(lang, code, libs=None, timeout=30):
+def post_task(lang, code, libs=None, timeout=30, memory_profile=False):
     url = 'http://localhost:4096/execute'
-    data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout}
+    data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout, 'run_memory_profile': memory_profile}
     response = requests.post(url, json=data)
     return response.json()
 

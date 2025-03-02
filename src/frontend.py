@@ -21,6 +21,9 @@ language = utils.lang_map[lang][0]
 lib_str = st.text_input("Library?", placeholder="Package A, Package B, ... , Package N", help="if any libraries are needed. Seperate with a comma.")
 libraries = [lib.strip() for lib in lib_str.split(",")] if lib_str else None
 
+# Memory Profile
+memory_profile = st.checkbox("Memory Profile?", help="Enable memory profiling for the code execution.")
+
 # Code Editor
 editor_buttons = [{
     "name": "Submit", 
@@ -40,7 +43,7 @@ if response_dict['type'] == 'submit':
     code = response_dict['text']
     my_bar = st.progress(0, text=f"Code Execution starts")
     with st.spinner('Ok, give me a sec...'):
-        response = utils.post_task(language, code, libraries)
+        response = utils.post_task(language, code, libraries, 30, memory_profile)
         task_id = response['task_id']
         st.write(f"Task ID: {task_id}")
     
@@ -50,16 +53,18 @@ if response_dict['type'] == 'submit':
             if response['status'] in ['done', 'error', 'timeout']:
                 break
             my_bar.progress(ts / timeout, text=f"Running ({ts}/{timeout}) s...")
-
     
-    if response['output_dict'] and response['output_dict']['stdout']:
+    if response['output_dict'] and 'stdout' in response['output_dict']:
         st.success(response['output_dict']['stdout'])
     
-    if response['output_dict'] and response['output_dict']['stderr']:
-        st.success(response['output_dict']['stderr'])
+    if response['output_dict'] and 'stderr' in response['output_dict']:
+        st.warning(response['output_dict']['stderr'])
     
     if response['status'] == "done":
-        st.write(f"**Execution Time:** :blue[{response['output_dict']['duration']}] ms, **Peak Memory:** :blue[{response['output_dict']['peak_memory']}] kb, **Integral:** :blue[{response['output_dict']['integral']}] kb*ms")
-        st.area_chart(pd.DataFrame(response['output_dict']['log'], columns=["timestemp", "memory"]), x='timestemp', y='memory')
+        if memory_profile:
+            st.write(f"**Execution Time:** :blue[{response['output_dict']['duration']}] ms, **Peak Memory:** :blue[{response['output_dict']['peak_memory']}] kb, **Integral:** :blue[{response['output_dict']['integral']}] kb*ms")
+            st.area_chart(pd.DataFrame(response['output_dict']['log'], columns=["timestemp", "memory"]), x='timestemp', y='memory')
+        else:
+            st.write(response)
     else:
         st.error(response)

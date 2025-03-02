@@ -76,12 +76,13 @@ class Manager:
             libraries = input_dict.get('libraries', None)
             language = input_dict['language']
             timeout = min(input_dict.get('timeout', 30), 120)
+            run_memory_profile = input_dict.get('run_memory_profile', False)
 
             with SandboxSession(lang=language, verbose=False, container_configs={"cpuset_cpus": str(worker_id), "mem_limit": "1g"}) as session:
                 def setup_and_run():
                     if libraries:
                         session.setup(libraries=libraries)
-                    return session.run(code=code, run_memory_profile=True)
+                    return session.run(code=code, run_memory_profile=run_memory_profile)
             
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(setup_and_run)
