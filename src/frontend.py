@@ -4,7 +4,6 @@
 # Date: 2025-03-01
 
 import time
-import utils
 import requests
 import pandas as pd
 import streamlit as st
@@ -33,8 +32,8 @@ def get_result(task_id):
 st.title("_Monolith_ is :blue[cool]")
 
 # Language
-lang = st.selectbox("Language?", utils.lang_map.keys(), help="the language for submission.")
-language = utils.lang_map[lang][0]
+lang = st.selectbox("Language?", lang_map.keys(), help="the language for submission.")
+language = lang_map[lang][0]
 
 # Libraries
 lib_str = st.text_input("Library?", placeholder="Package A, Package B, ... , Package N", help="if any libraries are needed. Seperate with a comma.")
@@ -56,20 +55,20 @@ editor_buttons = [{
     "commands": ["submit"], 
     "style": {"bottom": "0.44rem","right": "0.4rem"}
 }]
-code_prompt = utils.lang_map[lang][2]
-response_dict = code_editor(code_prompt, lang=utils.lang_map[lang][0], height=[15,15], options={"wrap": False}, buttons=editor_buttons)
+code_prompt = lang_map[lang][2]
+response_dict = code_editor(code_prompt, lang=lang_map[lang][0], height=[15,15], options={"wrap": False}, buttons=editor_buttons)
 
 if response_dict['type'] == 'submit':
     code = response_dict['text']
     my_bar = st.progress(0, text=f"Code Execution starts")
     with st.spinner('Ok, give me a sec...'):
-        response = utils.post_task(language, code, libraries, 30, memory_profile)
+        response = post_task(language, code, libraries, 30, memory_profile)
         task_id = response['task_id']
         st.write(f"Task ID: {task_id}")
     
         for ts in range(timeout+1):
             time.sleep(1)
-            response = utils.get_result(task_id)
+            response = get_result(task_id)
             if response['status'] in ['done', 'error', 'timeout']:
                 break
             my_bar.progress(ts / timeout, text=f"Running ({ts}/{timeout}) s...")
