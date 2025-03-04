@@ -38,6 +38,7 @@ class Manager:
     
     def task_clean(self) -> None:
         with self.task_results_lock:
+            app.logger.debug(f'[-] Cleaning task results: {len(self.task_results)}')
             while len(self.task_results) >= self.result_size:
                 self.task_results.popitem(last=False)
 
@@ -53,7 +54,7 @@ class Manager:
                 'status': 'processing',
                 'output_dict': None
             }
-            app.logger.debug(f'[-] Worker-{worker_id} is processing task-{task_id}...')
+            app.logger.info(f'[-] Worker-{worker_id} is processing task-{task_id}...')
             try:
                 with self.task_results_lock:
                     self.task_results[task_id] = task_result
@@ -102,11 +103,12 @@ app.manager = Manager(queue_size=32, result_size=1024)
 @app.route('/execute', methods=['POST'])
 def handle_execute():
     input_dict = request.get_json()
-    app.logger.info(f'[+] Received an execute request: {input_dict}, current queue size: {app.manager.task_queue.qsize()}')
+    uuid_str = str(uuid.uuid4())
+
+    app.logger.info(f'[+] Received an execute request: {input_dict}, Task ID: {uuid_str}, Current Queue Size: {app.manager.task_queue.qsize()}')
     if not input_dict or 'code' not in input_dict:
         return jsonify({'error': 'No code provided', 'status': 'error'}), 400
-
-    uuid_str = str(uuid.uuid4())
+    
     try:
         app.manager.task_queue.put_nowait((uuid_str, input_dict))
         app.logger.info(f'[+] Task [{uuid_str}] is added to the task queue.')
@@ -117,7 +119,7 @@ def handle_execute():
 
 @app.route('/results/<task_id>', methods=['GET'])
 def get_result(task_id):
-    app.logger.debug(f'[+] Received a result request: [{task_id}]')
+    app.logger.debug(f'[+] Received a Result Request: [{task_id}]')
     with app.manager.task_results_lock:
         result = app.manager.task_results.get(task_id)
     
