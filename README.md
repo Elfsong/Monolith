@@ -18,13 +18,14 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 ```python
 import requests
 
-lang = "python"
-code = "print('Hello World')"
-libs = ['numpy']
-timeout = 30
-run_memory_profile = True
+data = {
+  'language': "python",
+  'code': "print('Hello World')",
+  'libraries': ['numpy'],
+  'timeout': 30,
+  'run_memory_profile': True
+}
 
-data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout, 'run_memory_profile': run_memory_profile}
 response = requests.post('https://monolith.cool/execute', json=data)
 task_id = response.json()['task_id']
 print(task_id)
