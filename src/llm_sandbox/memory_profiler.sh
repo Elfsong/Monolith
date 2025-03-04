@@ -25,7 +25,7 @@ while kill -0 "$PID" 2>/dev/null; do
     fi
     
     echo "$timestamp_ns $rss_kb" >> "$LOG_FILE"
-    sleep 0.00001
+    # sleep 0.00001 # <-------------------------- Sampling Rate Control  
 done
 
 # 5. Wait PID finish
