@@ -18,12 +18,13 @@ run_memory_profile = True
 
 data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout, 'run_memory_profile': run_memory_profile}
 response = requests.post('https://monolith.cool/execute', json=data)
-return response.json()
+task_id = response.json()['task_id']
+print(task_id)
 ```
 
 - **Result Request (Sync) <- task_id:**
 ```python
 import requests
 response = requests.get(f'https://monolith.cool/results/{task_id}')
-return response.json()
+print(response.json())
 ```
