@@ -9,7 +9,14 @@ Monolith is a code efficiency benchmark environment.
 - **Task Request (Async) -> task_id :**
 ```python
 import requests
-data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout, 'run_memory_profile': memory_profile}
+
+lang = "python"
+code = "print('Hello World')"
+libs = ['numpy']
+timeout = 30
+run_memory_profile = True
+
+data = {'language': lang, 'code': code, 'libraries': libs, 'timeout': timeout, 'run_memory_profile': run_memory_profile}
 response = requests.post('https://monolith.cool/execute', json=data)
 return response.json()
 ```
