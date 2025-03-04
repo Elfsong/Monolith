@@ -14,7 +14,7 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 # Quick Start
 - 🌐 Online Demo: [https://monolith.cool](https://monolith.cool)
 
-- ⬆️ **Task Request (Async) -> task_id :**
+- ⬆️ **Task Request (Async POST) -> task_id :**
 ```python
 import requests
 
@@ -31,7 +31,7 @@ task_id = response.json()['task_id']
 print(task_id)
 ```
 
-- ⬇️ **Result Request (Sync) <- task_id:**
+- ⬇️ **Result Request (Sync GET) <- task_id:**
 ```python
 import requests
 response = requests.get(f'https://monolith.cool/results/{task_id}')
