@@ -1,8 +1,9 @@
 ![Monolith](https://github.com/user-attachments/assets/98aa471d-462f-4395-9510-5e55ef7a4dae)
 
 # Monolith
-Monolith is a code efficiency benchmark environment.
-It currently supports Python / Go / CPP / Java / Javascript
+- Monolith is a code efficiency benchmark environment.
+
+- It currently supports Python / Go / CPP / Java / Javascript
 
 # Quick Start
 - **Online Demo:** [https://monolith.cool](https://monolith.cool)
