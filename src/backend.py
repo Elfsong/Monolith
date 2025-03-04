@@ -102,7 +102,7 @@ app.manager = Manager(queue_size=32, result_size=1024)
 @app.route('/execute', methods=['POST'])
 def handle_execute():
     input_dict = request.get_json()
-    app.logger.debug(f'[+] Received an execute request: {input_dict}')
+    app.logger.info(f'[+] Received an execute request: {input_dict}, current queue size: {app.manager.task_queue.qsize()}')
     if not input_dict or 'code' not in input_dict:
         return jsonify({'error': 'No code provided', 'status': 'error'}), 400
 
@@ -117,7 +117,7 @@ def handle_execute():
 
 @app.route('/results/<task_id>', methods=['GET'])
 def get_result(task_id):
-    app.logger.info(f'[+] Received a result request: [{task_id}]')
+    app.logger.debug(f'[+] Received a result request: [{task_id}]')
     with app.manager.task_results_lock:
         result = app.manager.task_results.get(task_id)
     
