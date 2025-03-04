@@ -2,6 +2,7 @@
 
 # Monolith
 Monolith is a code efficiency benchmark environment.
+It currently supports Python / Go / CPP / Java / Javascript
 
 # Quick Start
 - **Online Demo:** [https://monolith.cool](https://monolith.cool)
