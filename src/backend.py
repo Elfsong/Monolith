@@ -34,7 +34,6 @@ class Manager:
             t.start()
         app.logger.info('[+] Workers are ready to work.')
         app.logger.info('[+] Manager is ready to accept tasks.')
-        app.logger.info('=============================================')
     
     def task_clean(self) -> None:
         with self.task_results_lock:
