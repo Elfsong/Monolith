@@ -39,7 +39,7 @@ class Manager:
         return {
             'max_queue_size': self.task_queue.maxsize, 
             'current_queue_size': self.task_queue.qsize(), 
-            'mex_result_size': self.result_size,
+            'max_result_size': self.result_size,
             'current_result_size': len(self.task_results)
         }
     
@@ -105,7 +105,7 @@ class Manager:
             task_result['output_dict'] = {'error': str(e)}
 
 app = Flask(__name__)
-app.manager = Manager(queue_size=32, result_size=1024)
+app.manager = Manager(queue_size=128, result_size=1024)
 
 @app.route('/execute', methods=['POST'])
 def handle_execute():
@@ -120,7 +120,7 @@ def handle_execute():
         app.manager.task_queue.put_nowait((uuid_str, input_dict))
         app.logger.info(f'[+] Task [{uuid_str}] is added to the task queue.')
     except queue.Full:
-        return jsonify({'error': 'Task queue is full', 'status': 'error'}), 503
+        return jsonify({'error': 'Task queue is full. Try again later.', 'status': 'error'}), 503
 
     return jsonify({'task_id': uuid_str}), 200
 
