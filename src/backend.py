@@ -34,6 +34,14 @@ class Manager:
             t.start()
         app.logger.info('[+] Workers are ready to work.')
         app.logger.info('[+] Manager is ready to accept tasks.')
+
+    def get_status(self) -> int:
+        return {
+            'max_queue_size': self.task_queue.maxsize, 
+            'current_queue_size': self.task_queue.qsize(), 
+            'mex_result_size': self.result_size,
+            'current_result_size': len(self.task_results)
+        }
     
     def task_clean(self) -> None:
         with self.task_results_lock:
@@ -128,6 +136,10 @@ def get_result(task_id):
         app.manager.task_results.pop(task_id)
     
     return jsonify(result), 200
+
+@app.route('/status', methods=['GET'])
+def get_status():
+    return jsonify(app.manager.get_status()), 200
 
 @app.route('/')
 def index():
