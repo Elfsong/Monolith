@@ -42,6 +42,8 @@ def get_libraries_installation_command(lang: str, library: str) -> Optional[str]
         return f"go get -u {library}"
     elif lang == SupportedLanguage.RUBY:
         return f"gem install {library}"
+    elif lang == SupportedLanguage.RUST:
+        return f"cargo add {library}"
     else:
         raise ValueError(f"Language {lang} is not supported")
 
@@ -64,18 +66,20 @@ def get_code_file_extension(lang: str) -> str:
         return "go"
     elif lang == SupportedLanguage.RUBY:
         return "rb"
+    elif lang == SupportedLanguage.RUST:
+        return "rs"
     else:
         raise ValueError(f"Language {lang} is not supported")
 
 
-def get_code_execution_command(lang: str, code_file: str, run_memory_profile: bool) -> list:
+def get_code_execution_command(lang: str, code_file: str, run_profiling: bool) -> list:
     """
     Return the execution command for the given language and code file.
     :param lang: Language of the code
     :param code_file: Path to the code file
     :return: List of execution commands
     """
-    if run_memory_profile:
+    if run_profiling:
         if lang == SupportedLanguage.PYTHON:
             return [f"/tmp/memory_profiler.sh python {code_file}"]
         elif lang == SupportedLanguage.JAVA:
@@ -88,6 +92,8 @@ def get_code_execution_command(lang: str, code_file: str, run_memory_profile: bo
             return [f"/tmp/memory_profiler.sh go run {code_file}"]
         elif lang == SupportedLanguage.RUBY:
             return [f"ruby {code_file}"]
+        elif lang == SupportedLanguage.RUST:
+            return [f'mv src/code.rs src/main.rs', f"/tmp/memory_profiler.sh cargo run"]
         else:
             raise ValueError(f"Language {lang} is not supported")
     else:
@@ -103,9 +109,10 @@ def get_code_execution_command(lang: str, code_file: str, run_memory_profile: bo
             return [f"/usr/bin/time -v go run {code_file}"]
         elif lang == SupportedLanguage.RUBY:
             return [f"/usr/bin/time -v ruby {code_file}"]
+        elif lang == SupportedLanguage.RUST:
+            return [f'mv src/code.rs src/main.rs', f"/usr/bin/time -v cargo run"]
         else:
             raise ValueError(f"Language {lang} is not supported")
-    
 
 
 def parse_time_v_output(time_v_text: str) -> dict:

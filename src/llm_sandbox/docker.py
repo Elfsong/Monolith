@@ -124,7 +124,7 @@ class SandboxDockerSession(Session):
             **self.container_configs if self.container_configs else {},
         )
         
-        self.setup()
+        self.setup(libraries=[])
 
     def close(self):
         if self.container:
@@ -159,45 +159,46 @@ class SandboxDockerSession(Session):
                         f"Image {self.image.tags[-1]} is in use by other containers. Skipping removal.."
                     )
 
-    def setup(self, libraries: Optional[List] = None):
+    def setup(self, libraries=[]):
         self.execute_command('apt update')
         self.execute_command('apt install time')
 
-        if libraries:
-            if self.lang.upper() in NotSupportedLibraryInstallation:
-                raise ValueError(
-                    f"Library installation has not been supported for {self.lang} yet!"
-                )
+        if self.lang.upper() in NotSupportedLibraryInstallation:
+            raise ValueError(f"Library installation has not been supported for {self.lang} yet!")
 
-            if self.lang == SupportedLanguage.GO:
-                self.execute_command("mkdir -p /go_space")
-                self.execute_command("go mod init go_space", workdir="/go_space")
-                self.execute_command("go mod tidy", workdir="/go_space")
+        if self.lang == SupportedLanguage.GO:
+            self.execute_command("mkdir -p /go_space")
+            self.execute_command("go mod init go_space", workdir="/go_space")
+            self.execute_command("go mod tidy", workdir="/go_space")
+            for library in libraries:
+                command = get_libraries_installation_command(self.lang, library)
+                _ = self.execute_command(command, workdir="/go_space")
+        elif self.lang == SupportedLanguage.RUST:
+            self.execute_command("cargo new rust_space")
+            for library in libraries:
+                command = get_libraries_installation_command(self.lang, library)
+                _ = self.execute_command(command, workdir="/rust_space")
+        else:
+            for library in libraries:
+                command = get_libraries_installation_command(self.lang, library)
+                _ = self.execute_command(command)
 
-                for library in libraries:
-                    command = get_libraries_installation_command(self.lang, library)
-                    _ = self.execute_command(command, workdir="/go_space")
-            else:
-                for library in libraries:
-                    command = get_libraries_installation_command(self.lang, library)
-                    _ = self.execute_command(command)
-
-    def run(self, code: str, run_memory_profile=True, *args, **kwargs) -> ConsoleOutput:
+    def run(self, code: str, run_profiling=False, *args, **kwargs) -> ConsoleOutput:
         if not self.container:
-            raise RuntimeError(
-                "Session is not open. Please call open() method before running code."
-            )
+            raise RuntimeError("Session is not open. Please call open() method before running code.")
 
         with tempfile.TemporaryDirectory() as directory_name:
+            # Source Path
             code_source_path = os.path.join(directory_name, f"code.{get_code_file_extension(self.lang)}")
             profiler_source_path = './llm_sandbox/memory_profiler.sh'
             
+            # Destination Path
             if self.lang == SupportedLanguage.GO:
                 code_dest_path = "/go_space/code.go"
+            elif self.lang == SupportedLanguage.RUST:
+                code_dest_path = "/rust_space/src/"
             else:
-                code_dest_path = (
-                    f"/tmp/code.{get_code_file_extension(self.lang)}"
-                )
+                code_dest_path = f"/tmp/code.{get_code_file_extension(self.lang)}"
             profiler_dest_path = "/tmp/memory_profiler.sh"
 
             with open(code_source_path, "w") as f:
@@ -207,24 +208,29 @@ class SandboxDockerSession(Session):
             self.copy_to_runtime(profiler_source_path, profiler_dest_path)
 
             output = ConsoleOutput()
-            commands = get_code_execution_command(self.lang, code_dest_path, run_memory_profile=run_memory_profile)
+            commands = get_code_execution_command(self.lang, code_dest_path, run_profiling=run_profiling)
             
             for index, command in enumerate(commands):
                 if self.lang == SupportedLanguage.GO:
                     output = self.execute_command(command, workdir="/go_space")
+                elif self.lang == SupportedLanguage.RUST:
+                    output = self.execute_command(command, workdir="/rust_space")
                 else:
                     output = self.execute_command(command)
-                    if self.verbose:
-                        print(output.stdout)
-                        print(output.stderr)
+
+                if self.verbose:
+                    print('stdout:', output.stdout)
+                    print('stderr:', output.stderr)
 
             # Construct the response
             response = {"stdout": output.stdout, "stderr": output.stderr, "peak_memory": 0, "integral": 0, "duration": 0, 'log': list()}
 
-            if run_memory_profile:
+            if run_profiling:
                 log_path = os.path.join(directory_name, 'mem_usage.log')
                 if self.lang == SupportedLanguage.GO:
                     self.copy_from_runtime('/go_space/mem_usage.log', log_path)
+                elif self.lang == SupportedLanguage.RUST:
+                    self.copy_from_runtime('/rust_space/mem_usage.log', log_path)
                 else:
                     self.copy_from_runtime('mem_usage.log', log_path)
                 
@@ -265,9 +271,7 @@ class SandboxDockerSession(Session):
 
     def copy_to_runtime(self, src: str, dest: str):
         if not self.container:
-            raise RuntimeError(
-                "Session is not open. Please call open() method before copying files."
-            )
+            raise RuntimeError("Session is not open. Please call open() method before copying files.")
 
         is_created_dir = False
         directory = os.path.dirname(dest)

@@ -9,6 +9,7 @@ class SupportedLanguage:
     CPP = "cpp"
     GO = "go"
     RUBY = "ruby"
+    RUST = "rust"
 
 
 @dataclass
@@ -19,6 +20,7 @@ class DefaultImage:
     CPP = "gcc:11.2.0-bullseye"
     GO = "golang:1.17.0-bullseye"
     RUBY = "ruby:3.0.2-bullseye"
+    RUST = "rust:1.85.0-bullseye"
 
 
 NotSupportedLibraryInstallation = ["JAVA"]
