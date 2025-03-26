@@ -14,7 +14,9 @@ lang_map = {
     "CPP": ["c_cpp", "cpp", "// Don't Worry, You Can't Break It. We Promise.\n// For Cpp, please make sure the program lasts at least 1 ms.\n"],
     "Java": ["java", "java", "// Don't Worry, You Can't Break It. We Promise.\n"],
     "JavaScript": ["javascript", "javascript", "// Don't Worry, You Can't Break It. We Promise.\n"],
-    "Golang": ["golang", "go", "// Don't Worry, You Can't Break It. We Promise.\n"]
+    "Golang": ["golang", "go", "// Don't Worry, You Can't Break It. We Promise.\n"],
+    "Ruby": ["ruby", "ruby", "# Don't Worry, You Can't Break It. We Promise.\n"],
+    "Rust": ["rust", "rust", "// Don't Worry, You Can't Break It. We Promise.\n"],
 }
 
 def post_task(lang, code, libs=None, timeout=30, memory_profile=False):
@@ -37,10 +39,10 @@ language = lang_map[lang][0]
 
 # Libraries
 lib_str = st.text_input("Library?", placeholder="Package A, Package B, ... , Package N", help="if any libraries are needed. Seperate with a comma.")
-libraries = [lib.strip() for lib in lib_str.split(",")] if lib_str else None
+libraries = [lib.strip() for lib in lib_str.split(",")] if lib_str else []
 
 # Memory Profile
-memory_profile = st.checkbox("Memory Profile?", help="Enable memory profiling for the code execution.")
+profiling = st.checkbox("Run Profiling?", help="Enable memory profiling for the code execution.")
 
 # Timeout
 timeout = st.number_input("Timeout?", min_value=1, max_value=120, value=30, help="the maximum time allowed for execution.")
@@ -62,7 +64,7 @@ if response_dict['type'] == 'submit':
     code = response_dict['text']
     my_bar = st.progress(0, text=f"Code Execution starts")
     with st.spinner('Ok, give me a sec...'):
-        response = post_task(language, code, libraries, 30, memory_profile)
+        response = post_task(language, code, libraries, 30, profiling)
         task_id = response['task_id']
         st.write(f"Task ID: {task_id}")
     
@@ -80,7 +82,7 @@ if response_dict['type'] == 'submit':
         st.warning(response['output_dict']['stderr'])
     
     if response['status'] == "done":
-        if memory_profile:
+        if profiling:
             st.write(f"**Execution Time:** :blue[{response['output_dict']['duration']}] ms, **Peak Memory:** :blue[{response['output_dict']['peak_memory']}] kb, **Integral:** :blue[{response['output_dict']['integral']}] kb*ms")
             st.area_chart(pd.DataFrame(response['output_dict']['log'], columns=["timestemp", "memory"]), x='timestemp', y='memory')
         else:
