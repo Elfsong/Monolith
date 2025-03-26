@@ -2,8 +2,6 @@
 
 # Monolith (磐石)
 
-
-
 [![Python](https://img.shields.io/badge/Python-3.9.19-blue)](https://hub.docker.com/_/python)
 [![OpenJDK](https://img.shields.io/badge/OpenJDK-11.0.12-blue)]()
 [![NodeJS](https://img.shields.io/badge/NodeJS-22-blue)])(https://hub.docker.com/_/node)
@@ -11,16 +9,6 @@
 [![Golang](https://img.shields.io/badge/Golang-1.17-blue)](https://hub.docker.com/_/golang)
 [![Ruby](https://img.shields.io/badge/Ruby-3.0.2-blue)](https://hub.docker.com/_/ruby)
 [![Rust](https://img.shields.io/badge/Rust-1.85-blue)](https://hub.docker.com/_/rust)
-
-
-    JAVASCRIPT = "node:22-bullseye"
-    CPP = "gcc:11.2.0-bullseye"
-    GO = "golang:1.17.0-bullseye"
-    RUBY = "ruby:3.0.2-bullseye"
-    RUST = "rust:1.85.0-bullseye"
-
-
-
 
 > The term "Monolith" originates from the Latin monolithus, which itself derives from the Ancient Greek μονόλιθος (monólithos).
 > μόνος (mónos) means "one" and λίθος (líthos) means "stone".
