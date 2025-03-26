@@ -163,7 +163,7 @@ class SandboxDockerSession(Session):
         self.execute_command('apt update')
         self.execute_command('apt install time')
 
-        if self.lang.upper() in NotSupportedLibraryInstallation:
+        if self.lang.upper() in NotSupportedLibraryInstallation and libraries != []:
             raise ValueError(f"Library installation has not been supported for {self.lang} yet!")
 
         if self.lang == SupportedLanguage.GO:
