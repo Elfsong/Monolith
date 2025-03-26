@@ -91,7 +91,7 @@ def get_code_execution_command(lang: str, code_file: str, run_profiling: bool) -
         elif lang == SupportedLanguage.GO:
             return [f"/tmp/memory_profiler.sh go run {code_file}"]
         elif lang == SupportedLanguage.RUBY:
-            return [f"ruby {code_file}"]
+            return [f"/tmp/memory_profiler.sh ruby {code_file}"]
         elif lang == SupportedLanguage.RUST:
             return [f'mv src/code.rs src/main.rs', f"/tmp/memory_profiler.sh cargo run"]
         else:
@@ -104,7 +104,7 @@ def get_code_execution_command(lang: str, code_file: str, run_profiling: bool) -
         elif lang == SupportedLanguage.JAVASCRIPT:
             return [f"/usr/bin/time -v node {code_file}"]
         elif lang == SupportedLanguage.CPP:
-            return [f"/usr/bin/time -v g++ -o a.out {code_file}", "./a.out"]
+            return [f"g++ -o a.out {code_file}", "/usr/bin/time -v ./a.out"]
         elif lang == SupportedLanguage.GO:
             return [f"/usr/bin/time -v go run {code_file}"]
         elif lang == SupportedLanguage.RUBY:
