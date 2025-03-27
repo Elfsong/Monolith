@@ -18,8 +18,8 @@
 
 Monolith is a high-precision code efficiency benchmarking environment. Designed to measure performance with millisecond-level time-memory integration, it provides reliable and insightful metrics across multiple programming languages.
 
-- ✅ Supports multiple languages: Python, Go, C++, Java, JavaScript, Ruby, and Rust! 
-- ✅ Implements an asynchronous queue for task execution
+- ✅ Supports multiple languages: **Python**, **Go**, **C++**, **Java**, **JavaScript**, **Ruby**, and **Rust**! 
+- ✅ Implements an **asynchronous** queue for task execution
 - ✅ Ensures consistent and precise performance benchmarking across different environments
 - ✅ Supports scalable worker processes for high-performance benchmarking
 
