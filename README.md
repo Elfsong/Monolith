@@ -9,7 +9,9 @@
 [![Golang](https://img.shields.io/badge/Golang-1.17-blue)](https://hub.docker.com/_/golang)
 [![Ruby](https://img.shields.io/badge/Ruby-3.0.2-blue)](https://hub.docker.com/_/ruby)
 [![Rust](https://img.shields.io/badge/Rust-1.85-blue)](https://hub.docker.com/_/rust)
+
 [![Monolith](https://img.shields.io/pypi/v/monolith-lib)](https://pypi.org/project/monolith-lib/)
+[![HuggingFace](https://img.shields.io/badge/Hugging%20Face-Elfsong/Monolith-ffd21e.svg)](https://huggingface.co/spaces/Elfsong/Monolith)
 
 > The term "Monolith" originates from the Latin monolithus, which itself derives from the Ancient Greek μονόλιθος (monólithos).
 > μόνος (mónos) means "one" and λίθος (líthos) means "stone".
@@ -21,12 +23,12 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 - ✅ Ensures consistent and precise performance benchmarking across different environments
 - ✅ Supports scalable worker processes for high-performance benchmarking
 
-# 🌐 Online Demo
-We have a live demo here: [![HuggingFace](https://img.shields.io/badge/Hugging%20Face-Elfsong/Monolith-ffd21e.svg)](https://huggingface.co/spaces/Elfsong/Monolith)
-
 # 🚀 Quick Start
 
+> If you're just curious, you can have a try it out on our live demo 🌐: [https://huggingface.co/spaces/Elfsong/Monolith](https://huggingface.co/spaces/Elfsong/Monolith)
+
 ```bash
+# Install the library
 pip install monolith-lib
 ```
 
