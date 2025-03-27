@@ -25,7 +25,7 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 
 # 🚀 Quick Start
 
-> If you're just curious, you can have a try it out on our live demo 🌐: [https://huggingface.co/spaces/Elfsong/Monolith](https://huggingface.co/spaces/Elfsong/Monolith)
+> If you're just curious, you can have a try it out on [our live demo 🌐](https://huggingface.co/spaces/Elfsong/Monolith)
 
 ```bash
 # Install the library
