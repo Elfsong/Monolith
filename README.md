@@ -49,10 +49,10 @@ post_response = monolith.post_code_submit(
 # 2) Get async task_id from POST response
 task_id = post_response['task_id']
 
-# 3) Do something else
+# 3) Do something else (optional)
 monolith_status = monolith.get_result()
 
-# 3) Get the code result from Monolith (GET)
+# 4) Get the code result from Monolith (GET)
 get_response = monolith.get_code_result(task_id)
 print(get_response)
 ```
