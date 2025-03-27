@@ -22,7 +22,7 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 - ✅ Supports scalable worker processes for high-performance benchmarking
 
 # 🌐 Online Demo
-[![HuggingFace](https://img.shields.io/badge/Hugging%20Face-Elfsong/Monolith-ffd21e.svg)](https://huggingface.co/spaces/Elfsong/Monolith)
+We have a live demo here: [![HuggingFace](https://img.shields.io/badge/Hugging%20Face-Elfsong/Monolith-ffd21e.svg)](https://huggingface.co/spaces/Elfsong/Monolith)
 
 # 🚀 Quick Start
 
@@ -38,7 +38,7 @@ monolith = monolith.Monolith(backend_url='https://monolith.cool')
 # 1) Submit code to Monolith (POST)
 post_response = monolith.post_code_submit(
     lang = 'python',
-    libs = [],
+    libs = ['numpy', 'pandas'],
     code = 'print("Hello, World!")',
     timeout = 10,
     profiling = False
@@ -47,12 +47,15 @@ post_response = monolith.post_code_submit(
 # 2) Get async task_id from POST response
 task_id = post_response['task_id']
 
-# 3) Get code result from Monolith (GET)
+# 3) Do something else
+monolith_status = monolith.get_result()
+
+# 3) Get the code result from Monolith (GET)
 get_response = monolith.get_code_result(task_id)
 print(get_response)
 ```
 
-# 🚧 DIY
+# 🚧 Do It Yourself
 - ⬆️ **Task Request (Async POST) -> task_id :**
 ```python
 import requests
