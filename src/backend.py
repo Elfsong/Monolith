@@ -11,6 +11,7 @@ import traceback
 import threading
 import collections
 import concurrent.futures
+import timeout_decorator
 from typing import Any, Dict
 from llm_sandbox import SandboxSession
 from flask import Flask, request, jsonify, redirect
@@ -23,7 +24,7 @@ class Manager:
     def __init__(self, number_of_worker, queue_size, result_size):
         self.task_queue = queue.Queue(maxsize=queue_size)
         self.task_results = collections.OrderedDict()
-        self.task_results_lock = threading.Lock()
+        self.task_results_lock = threading.RLock()
         self.result_size = result_size
         self.number_of_worker = number_of_worker
 
@@ -81,7 +82,7 @@ class Manager:
                 # Process the task
                 processed_result = self.task_process(worker_id, input_dict, task_result)
 
-                # Update the task result
+                # Update the task
                 with self.task_results_lock:
                     self.task_results[task_id] = processed_result
             except Exception as e:
@@ -92,8 +93,7 @@ class Manager:
                 task_result.update(error_result)
                 with self.task_results_lock:
                     self.task_results[task_id] = task_result
-                app.logger.error(f'[!] Worker-{worker_id} encountered an error processing task-{task_id}: {e}', exc_info=True)
-
+                app.logger.error(f'[!] Worker-{worker_id} encountered an error on processing task-{task_id}: {e}', exc_info=True)
             finally:
                 self.task_clean()
                 self.task_queue.task_done()
@@ -111,27 +111,27 @@ class Manager:
 
             # Consider making sandbox parameters configurable
             with SandboxSession(lang=language, verbose=False, container_configs={"mem_limit": "1g", "cpuset_cpus": str(worker_id)}) as session:
+                @timeout_decorator.timeout(timeout, use_signals=False)
                 def setup_and_run():
                     session.setup(libraries=libraries)
-                    app.logger.info(f'[-] Worker-{worker_id} is setting up the session.')
+                    app.logger.info(f'[-] Worker-{worker_id} is setting up the session for task-{task_result["task_id"]}.')
                     result = session.run(code=code, run_profiling=run_profiling)
-                    app.logger.info(f'[-] Worker-{worker_id} finished running the code.')
+                    app.logger.info(f'[-] Worker-{worker_id} finished running the code for task-{task_result["task_id"]}.')
                     return result
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(setup_and_run)
-                    try:
-                        task_result['output_dict'] = future.result(timeout=timeout)
-                        task_result['status'] = 'done'
-                    except FutureTimeoutError:
-                        task_result['status'] = 'timeout'
-                        task_result['output_dict'] = {'error': 'Timeout reached.'}
+                result = setup_and_run()
+                task_result['output_dict'] = result
+                task_result['status'] = 'done'
+                
+        except timeout_decorator.timeout_decorator.TimeoutError:
+            task_result['status'] = 'timeout'
+            task_result['output_dict'] = {'error': 'Timeout reached.'}
         except Exception as e:
             task_result['status'] = 'error'
             task_result['output_dict'] = {'error': str(e), 'traceback': logging.exception(e)}
         finally:
             task_result['process_time'] = time.time() - start_time
-            app.logger.info(f'[-] Worker-{worker_id} finished processing task-{task_result["task_id"]} in {task_result["process_time"]:.2f} seconds.')
+            app.logger.info(f'[-] Worker-{worker_id} finished task-{task_result["task_id"]} in {task_result["process_time"]:.2f} ms.')
             return task_result
         
     def submit_task(self, task_id: str, input_dict: Dict) -> None:
@@ -142,7 +142,7 @@ class Manager:
             raise queue.Full
 
 app = Flask(__name__)
-app.manager = Manager(number_of_worker=32, queue_size=512, result_size=4096)
+app.manager = Manager(number_of_worker=28, queue_size=512, result_size=4096)
 
 @app.route('/execute', methods=['POST'])
 def handle_execute():
