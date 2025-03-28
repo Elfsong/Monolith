@@ -33,6 +33,7 @@ pip install monolith-lib
 ```
 
 ```python
+import time
 from monolith import monolith
 
 monolith = monolith.Monolith(backend_url='https://monolith.cool')
@@ -40,9 +41,9 @@ monolith = monolith.Monolith(backend_url='https://monolith.cool')
 # 1) Submit code to Monolith (POST)
 post_response = monolith.post_code_submit(
     lang = 'python',
-    libs = ['numpy', 'pandas'],
+    libs = ['numpy'],
     code = 'print("Hello, World!")',
-    timeout = 10,
+    timeout = 30,
     profiling = False
 )
 
@@ -51,10 +52,12 @@ task_id = post_response['task_id']
 
 # 3) Do something else (optional)
 monolith_status = monolith.get_result()
+print(monolith_status)
+time.sleep(5)
 
 # 4) Get the code result from Monolith (GET)
-get_response = monolith.get_code_result(task_id)
-print(get_response)
+response = monolith.get_code_result(task_id)
+print(response)
 ```
 
 # 🚧 Do It Yourself
