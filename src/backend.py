@@ -27,10 +27,9 @@ class Manager:
         self.task_results_lock = threading.RLock()
         self.result_size = result_size
         self.number_of_worker = number_of_worker
+        self.worker_status = [False] * number_of_worker
 
         app.logger.info('=============================================')
-        app.logger.info('[+] Creating Workers...')
-
         for worker_index in range(self.number_of_worker):
             app.logger.info(f'[+] Creating Worker-{worker_index}...')
             t = threading.Thread(
@@ -39,36 +38,45 @@ class Manager:
                 daemon=True
             )
             t.start()
-
-        app.logger.info('[+] Workers are ready to work.')
-        app.logger.info('[+] Manager is ready to accept tasks.')
+        app.logger.info(f'[+] Monolith (number of works = {self.number_of_worker}) is ready to accept tasks.')
 
     def get_status(self) -> Dict[str, Any]:
         with self.task_results_lock:
-            current_result_size = len(self.task_results)
-        return {
-            'max_queue_size': self.task_queue.maxsize,
-            'current_queue_size': self.task_queue.qsize(),
-            'max_result_size': self.result_size,
-            'current_result_size': current_result_size
-        }
+            return {
+                'max_queue_size': self.task_queue.maxsize,
+                'current_queue_size': self.task_queue.qsize(),
+                'max_result_size': self.result_size,
+                'current_result_size': len(self.task_results),
+                'number_of_worker': self.number_of_worker,
+                'worker_status': self.worker_status
+            }
     
-    def task_clean(self) -> None:
+    def task_clean(self, result_limit) -> None:
         with self.task_results_lock:
             app.logger.debug(f'[-] Cleaning task results: {len(self.task_results)}')
-            while len(self.task_results) >= self.result_size:
+            while len(self.task_results) >= result_limit:
                 self.task_results.popitem(last=False)
 
     def task_assign(self, worker_id) -> None:
         app.logger.debug(f'[-] Worker-{worker_id} is ready to work.')
         while True:
+            # Set the worker status to True (idle)
+            with self.task_results_lock:
+                self.worker_status[worker_id] = True
+            
+            # Wait for a task
             task_id, input_dict = self.task_queue.get()
+            
+            # Set the worker status to False (Occupied)
+            with self.task_results_lock:
+                self.worker_status[worker_id] = False
+                
             task_result = {
                 'task_id': task_id,
                 'input_dict': input_dict,
                 'worker_id': worker_id,
                 'timestamp': time.time(),
-                'process_time': -1,
+                'process_time': float('inf'),
                 'status': 'processing',
                 'output_dict': None
             }
@@ -95,7 +103,7 @@ class Manager:
                     self.task_results[task_id] = task_result
                 app.logger.error(f'[!] Worker-{worker_id} encountered an error on processing task-{task_id}: {e}', exc_info=True)
             finally:
-                self.task_clean()
+                self.task_clean(result_limit=self.result_size)
                 self.task_queue.task_done()
 
     def task_process(self, worker_id: int, input_dict: Dict, task_result: Dict) -> Dict:
@@ -142,7 +150,7 @@ class Manager:
             raise queue.Full
 
 app = Flask(__name__)
-app.manager = Manager(number_of_worker=28, queue_size=512, result_size=4096)
+app.manager = Manager(number_of_worker=81, queue_size=512, result_size=4096)
 
 @app.route('/execute', methods=['POST'])
 def handle_execute():
