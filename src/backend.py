@@ -150,7 +150,7 @@ class Manager:
             raise queue.Full
 
 app = Flask(__name__)
-app.manager = Manager(number_of_worker=81, queue_size=512, result_size=4096)
+app.manager = Manager(number_of_worker=86, queue_size=512, result_size=4096)
 
 @app.route('/execute', methods=['POST'])
 def handle_execute():
