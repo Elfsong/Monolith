@@ -2,6 +2,7 @@ if [ -f src/gunicorn.pid ]; then
     echo "Stopping Gunicorn..."
     kill -9 $(cat src/gunicorn.pid)
     pkill gunicorn
+    rm src/monolith.log
     rm src/gunicorn.pid
     echo "Stopped Gunicorn."
 else
