@@ -125,8 +125,6 @@ class MonolithManager:
             language = input_dict['language']
             timeout = min(input_dict.get('timeout', 30), 120)
             run_profiling = input_dict.get('run_memory_profile', False)
-            
-            app.logger.info(f'[-] Worker-{worker_id} is assigned for task-{task_result["task_id"]}.')
 
             # Consider making sandbox parameters configurable
             with SandboxSession(lang=language, verbose=False, container_configs={"mem_limit": "1g", "cpuset_cpus": str(worker_id)}) as session:
