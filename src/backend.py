@@ -3,24 +3,29 @@
 # Author: Du Mingzhe (mingzhe@nus.edu.sg)
 # Date: 2025-03-01
 
+
 import time
 import uuid
 import queue
+import psutil
 import logging
-import traceback
 import threading
 import collections
-import concurrent.futures
 import timeout_decorator
 from typing import Any, Dict
 from llm_sandbox import SandboxSession
 from flask import Flask, request, jsonify, redirect
-from concurrent.futures import TimeoutError as FutureTimeoutError
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename='monolith.log', filemode='a')
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s %(levelname)s: %(message)s', 
+    datefmt='%Y-%m-%d %H:%M:%S', 
+    filename='monolith.log', 
+    filemode='a'
+)
 
-class Manager:
+class MonolithManager:
     def __init__(self, number_of_worker, queue_size, result_cache_size):
         self.task_queue = queue.Queue(maxsize=queue_size)
         self.task_results = collections.OrderedDict()
@@ -29,17 +34,23 @@ class Manager:
         self.number_of_worker = number_of_worker
         self.worker_status = [False] * number_of_worker
 
-        app.logger.info('=============================================')
+        # Worker Initialization
         for worker_index in range(self.number_of_worker):
             app.logger.info(f'[+] Creating Worker-{worker_index}...')
-            t = threading.Thread(
-                target=self.task_assign,
-                args=(worker_index,),
-                daemon=True
-            )
-            t.start()
+            threading.Thread(target=self.task_assign, args=(worker_index,), daemon=True).start()
         app.logger.info(f'[+] Monolith (number of works = {self.number_of_worker}) is ready to accept tasks.')
-
+        
+        # Memory Monitoring
+        threading.Thread(target=self.monitor_memory_usage, args=(10,), daemon=True).start()
+    
+    def monitor_memory_usage(self, interval=10):
+        while True:
+            mem = psutil.virtual_memory()
+            total_gb = mem.total / (1024 ** 3)
+            available_gb = mem.available / (1024 ** 3)
+            app.logger.info(f"Memory usage: {mem.percent}% (Total: {total_gb} GB, Available: {available_gb} GB)")
+            time.sleep(interval)
+            
     def get_status(self) -> Dict[str, Any]:
         with self.task_results_lock:
             return {
@@ -88,7 +99,7 @@ class Manager:
                     self.task_results[task_id] = task_result
                     
                 # Process the task
-                processed_result = self.task_process(worker_id, input_dict, task_result)
+                processed_result = self.task_process(worker_id, task_id, input_dict, task_result)
 
                 # Update the task
                 with self.task_results_lock:
@@ -106,7 +117,7 @@ class Manager:
                 self.task_clean(result_cache_limit=self.result_cache_size)
                 self.task_queue.task_done()
 
-    def task_process(self, worker_id: int, input_dict: Dict, task_result: Dict) -> Dict:
+    def task_process(self, worker_id: int, task_id: str, input_dict: Dict, task_result: Dict) -> Dict:
         start_time = time.time()
         try:
             code = input_dict['code']
@@ -115,7 +126,7 @@ class Manager:
             timeout = min(input_dict.get('timeout', 30), 120)
             run_profiling = input_dict.get('run_memory_profile', False)
             
-            app.logger.info(f'[-] Worker-{worker_id} is working on {input_dict}')
+            app.logger.info(f'[-] Worker-{worker_id} is working on {task_id}.')
 
             # Consider making sandbox parameters configurable
             with SandboxSession(lang=language, verbose=False, container_configs={"mem_limit": "1g", "cpuset_cpus": str(worker_id)}) as session:
@@ -151,12 +162,12 @@ class Manager:
         
 
 # Hyperparameters
-number_of_worker = 81
+number_of_worker = 64
 task_queue_size = 256
-result_cache_size = 4096
+result_cache_size = 512
 
 app = Flask(__name__)
-app.manager = Manager(number_of_worker=number_of_worker, queue_size=task_queue_size, result_cache_size=result_cache_size)
+app.manager = MonolithManager(number_of_worker=number_of_worker, queue_size=task_queue_size, result_cache_size=result_cache_size)
 app.logger.info(f"Monolith Config: [number_of_worker = {number_of_worker}] [task_queue_size = {task_queue_size}] [result_cache_size = {result_cache_size}]")
 app.logger.info('=============================================')
 
@@ -198,7 +209,8 @@ def get_status():
 @app.route('/')
 def index():
     return redirect("https://huggingface.co/spaces/Elfsong/Monolith", code=302)
-    
+
+
 if __name__ == '__main__':
     app.run(port=8000, debug=False)
     
