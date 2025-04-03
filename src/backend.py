@@ -131,7 +131,6 @@ class MonolithManager:
                 @timeout_decorator.timeout(timeout, use_signals=False)
                 def setup_and_run():
                     session.setup(libraries=libraries)
-                    
                     result = session.run(code=code, run_profiling=run_profiling)
                     app.logger.info(f'[-] Worker-{worker_id} finished task-{task_result["task_id"]}.')
                     return result
