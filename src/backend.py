@@ -21,11 +21,11 @@ from concurrent.futures import TimeoutError as FutureTimeoutError
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename='monolith.log', filemode='a')
 
 class Manager:
-    def __init__(self, number_of_worker, queue_size, result_size):
+    def __init__(self, number_of_worker, queue_size, result_cache_size):
         self.task_queue = queue.Queue(maxsize=queue_size)
         self.task_results = collections.OrderedDict()
         self.task_results_lock = threading.RLock()
-        self.result_size = result_size
+        self.result_cache_size = result_cache_size
         self.number_of_worker = number_of_worker
         self.worker_status = [False] * number_of_worker
 
@@ -45,16 +45,16 @@ class Manager:
             return {
                 'max_queue_size': self.task_queue.maxsize,
                 'current_queue_size': self.task_queue.qsize(),
-                'max_result_size': self.result_size,
-                'current_result_size': len(self.task_results),
+                'max_result_cache_size': self.result_cache_size,
+                'current_result_cache_size': len(self.task_results),
                 'number_of_worker': self.number_of_worker,
                 'worker_status': self.worker_status
             }
     
-    def task_clean(self, result_limit) -> None:
+    def task_clean(self, result_cache_limit) -> None:
         with self.task_results_lock:
             app.logger.debug(f'[-] Cleaning task results: {len(self.task_results)}')
-            while len(self.task_results) >= result_limit:
+            while len(self.task_results) >= result_cache_limit:
                 self.task_results.popitem(last=False)
 
     def task_assign(self, worker_id) -> None:
@@ -103,7 +103,7 @@ class Manager:
                     self.task_results[task_id] = task_result
                 app.logger.error(f'[!] Worker-{worker_id} encountered an error on processing task-{task_id}: {e}', exc_info=True)
             finally:
-                self.task_clean(result_limit=self.result_size)
+                self.task_clean(result_cache_limit=self.result_cache_size)
                 self.task_queue.task_done()
 
     def task_process(self, worker_id: int, input_dict: Dict, task_result: Dict) -> Dict:
@@ -148,9 +148,17 @@ class Manager:
         except queue.Full:
             app.logger.warning(f'[!] Task queue full. Unable to submit task {task_id}')
             raise queue.Full
+        
+
+# Hyperparameters
+number_of_worker = 81
+task_queue_size = 256
+result_cache_size = 4096
 
 app = Flask(__name__)
-app.manager = Manager(number_of_worker=86, queue_size=512, result_size=4096)
+app.manager = Manager(number_of_worker=number_of_worker, queue_size=task_queue_size, result_cache_size=result_cache_size)
+app.logger.info(f"Monolith Config: [number_of_worker = {number_of_worker}] [task_queue_size = {task_queue_size}] [result_cache_size = {result_cache_size}]")
+app.logger.info('=============================================')
 
 @app.route('/execute', methods=['POST'])
 def handle_execute():
