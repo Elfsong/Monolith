@@ -150,14 +150,14 @@ class MonolithManager:
             task_result['output_dict'] = {'error': str(e), 'traceback': logging.exception(e)}
         finally:
             task_result['process_time'] = time.time() - start_time
-            app.logger.info(f'[-] Worker-{worker_id} finished task-{task_result["task_id"]} in {task_result["process_time"]:.2f} ms.')
+            app.logger.info(f'[-] Worker-{worker_id} finished task [{task_result["task_id"]}] in {task_result["process_time"]:.2f} ms.')
             return task_result
         
     def submit_task(self, task_id: str, input_dict: Dict) -> None:
         try:
             self.task_queue.put((task_id, input_dict), block=False)
         except queue.Full:
-            app.logger.warning(f'[!] Task queue full. Unable to submit task {task_id}')
+            app.logger.warning(f'[!] Task queue is full. Unable to submit task [{task_id}]')
             raise queue.Full
         
 
