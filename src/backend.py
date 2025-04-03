@@ -99,7 +99,7 @@ class MonolithManager:
                     self.task_results[task_id] = task_result
                     
                 # Process the task
-                processed_result = self.task_process(worker_id, task_id, input_dict, task_result)
+                processed_result = self.task_process(worker_id, input_dict, task_result)
 
                 # Update the task
                 with self.task_results_lock:
@@ -117,7 +117,7 @@ class MonolithManager:
                 self.task_clean(result_cache_limit=self.result_cache_size)
                 self.task_queue.task_done()
 
-    def task_process(self, worker_id: int, task_id: str, input_dict: Dict, task_result: Dict) -> Dict:
+    def task_process(self, worker_id: int, input_dict: Dict, task_result: Dict) -> Dict:
         start_time = time.time()
         try:
             code = input_dict['code']
@@ -126,16 +126,16 @@ class MonolithManager:
             timeout = min(input_dict.get('timeout', 30), 120)
             run_profiling = input_dict.get('run_memory_profile', False)
             
-            app.logger.info(f'[-] Worker-{worker_id} is working on {task_id}.')
+            app.logger.info(f'[-] Worker-{worker_id} is assigned for task-{task_result["task_id"]}.')
 
             # Consider making sandbox parameters configurable
             with SandboxSession(lang=language, verbose=False, container_configs={"mem_limit": "1g", "cpuset_cpus": str(worker_id)}) as session:
                 @timeout_decorator.timeout(timeout, use_signals=False)
                 def setup_and_run():
                     session.setup(libraries=libraries)
-                    app.logger.info(f'[-] Worker-{worker_id} is setting up the session for task-{task_result["task_id"]}.')
+                    
                     result = session.run(code=code, run_profiling=run_profiling)
-                    app.logger.info(f'[-] Worker-{worker_id} finished running the code for task-{task_result["task_id"]}.')
+                    app.logger.info(f'[-] Worker-{worker_id} finished task-{task_result["task_id"]}.')
                     return result
 
                 result = setup_and_run()
