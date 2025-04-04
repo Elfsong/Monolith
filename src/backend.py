@@ -159,7 +159,7 @@ class MonolithManager:
         
 
 # Hyperparameters
-number_of_worker = 64
+number_of_worker = 86
 task_queue_size = 256
 result_cache_size = 512
 
