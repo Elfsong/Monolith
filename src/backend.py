@@ -48,7 +48,7 @@ class MonolithManager:
             mem = psutil.virtual_memory()
             total_gb = mem.total / (1024 ** 3)
             available_gb = mem.available / (1024 ** 3)
-            app.logger.info(f"Memory usage: {mem.percent}% (Total: {total_gb} GB, Available: {available_gb} GB)")
+            app.logger.info(f"[Memory Manager] Memory usage: {mem.percent}% (Total: {total_gb} GB, Available: {available_gb} GB)")
             time.sleep(interval)
             
     def get_status(self) -> Dict[str, Any]:
@@ -132,7 +132,7 @@ class MonolithManager:
                 def setup_and_run():
                     session.setup(libraries=libraries)
                     result = session.run(code=code, run_profiling=run_profiling)
-                    app.logger.info(f'[-] Worker-{worker_id} finished task-{task_result["task_id"]}.')
+                    app.logger.info(f'[Monolith Manager] Worker-{worker_id} finished task-{task_result["task_id"]}.')
                     return result
 
                 result = setup_and_run()
@@ -147,7 +147,7 @@ class MonolithManager:
             task_result['output_dict'] = {'error': str(e), 'traceback': logging.exception(e)}
         finally:
             task_result['process_time'] = time.time() - start_time
-            app.logger.info(f'[-] Worker-{worker_id} finished task [{task_result["task_id"]}] in {task_result["process_time"]:.2f} ms.')
+            app.logger.info(f'[Monolith Manager] Worker-{worker_id} finished task [{task_result["task_id"]}] in {task_result["process_time"]:.2f} ms.')
             return task_result
         
     def submit_task(self, task_id: str, input_dict: Dict) -> None:
@@ -165,21 +165,21 @@ result_cache_size = 512
 
 app = Flask(__name__)
 app.manager = MonolithManager(number_of_worker=number_of_worker, queue_size=task_queue_size, result_cache_size=result_cache_size)
-app.logger.info(f"Monolith Config: [number_of_worker = {number_of_worker}] [task_queue_size = {task_queue_size}] [result_cache_size = {result_cache_size}]")
+app.logger.info(f"[Monolith Manager] Config: [number_of_worker = {number_of_worker}] [task_queue_size = {task_queue_size}] [result_cache_size = {result_cache_size}]")
 app.logger.info('=============================================')
 
 @app.route('/execute', methods=['POST'])
 def handle_execute():
     input_dict = request.get_json()
     uuid_str = str(uuid.uuid4())
-    app.logger.info(f'[+] Received an execute request: {input_dict}, Task ID: {uuid_str}, Current Queue Size: {app.manager.task_queue.qsize()}')
+    app.logger.info(f'[Monolith Manager] Received an execute request: {input_dict}, Task ID: {uuid_str}, Current Queue Size: {app.manager.task_queue.qsize()}')
 
     if not input_dict or 'code' not in input_dict:
         return jsonify({'error': 'No code provided', 'status': 'error'}), 400
     
     try:
         app.manager.submit_task(uuid_str, input_dict)
-        app.logger.info(f'[+] Task [{uuid_str}] is added to the task queue.')
+        app.logger.info(f'[Monolith Manager] Task [{uuid_str}] is added to the task queue.')
     except queue.Full:
         return jsonify({'error': 'Task queue is full. Try again later.', 'status': 'error'}), 503
 
