@@ -63,6 +63,7 @@ class MonolithManager:
             }
     
     def task_clean(self, result_cache_limit) -> None:
+        # TODO(mingzhe): call this function smarter
         with self.task_results_lock:
             app.logger.debug(f'[-] Cleaning task results: {len(self.task_results)}')
             while len(self.task_results) >= result_cache_limit:
@@ -126,6 +127,7 @@ class MonolithManager:
             timeout = min(input_dict.get('timeout', 30), 120)
             run_profiling = input_dict.get('run_memory_profile', False)
             
+            # TODO(mingzhe): Move it to config
             container_configs = {
                 'mem_limit': '1g',
                 'mem_swappiness': 0,
