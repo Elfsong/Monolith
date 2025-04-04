@@ -173,14 +173,14 @@ class MonolithManager:
         
 
 # Hyperparameters
-number_of_worker = 86
+number_of_worker = 72
 task_queue_size = 256
 result_cache_size = 512
 mem_limit = '1g'
 
 app = Flask(__name__)
 app.manager = MonolithManager(number_of_worker=number_of_worker, queue_size=task_queue_size, result_cache_size=result_cache_size, mem_limit=mem_limit)
-app.logger.info(f"[Monolith Manager] Config: [number_of_worker = {number_of_worker}] [task_queue_size = {task_queue_size}] [result_cache_size = {result_cache_size}]")
+app.logger.info(f"[Monolith Manager] Config: {number_of_worker} workers, {task_queue_size} task queue size, {result_cache_size} result cache size, {mem_limit} memory limit.")
 app.logger.info('=============================================')
 
 @app.route('/execute', methods=['POST'])
