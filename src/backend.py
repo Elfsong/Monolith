@@ -26,14 +26,18 @@ logging.basicConfig(
 )
 
 class MonolithManager:
-    def __init__(self, number_of_worker, queue_size, result_cache_size):
+    def __init__(self, number_of_worker, queue_size, result_cache_size, mem_limit):
         self.task_queue = queue.Queue(maxsize=queue_size)
         self.task_results = collections.OrderedDict()
         self.task_results_lock = threading.RLock()
         self.result_cache_size = result_cache_size
         self.number_of_worker = number_of_worker
         self.worker_status = [False] * number_of_worker
-
+        self.mem_limit = mem_limit
+        self.mem_swappiness = 0
+        self.memswap_limit = mem_limit
+        self.oom_kill_disable = False
+        
         # Worker Initialization
         for worker_index in range(self.number_of_worker):
             app.logger.info(f'[+] Creating Worker-{worker_index}...')
@@ -133,12 +137,11 @@ class MonolithManager:
                 'mem_swappiness': 0,
                 'memswap_limit': '1g',
                 'oom_kill_disable': False,
-                'cpu_rt_runtime': 120000000,
                 'cpuset_cpus': str(worker_id)
             }
 
             # Consider making sandbox parameters configurable
-            with SandboxSession(lang=language, verbose=False, container_configs=container_configs) as session:
+            with SandboxSession(lang=language, verbose=False, container_configs=self.container_configs) as session:
                 @timeout_decorator.timeout(timeout, use_signals=False)
                 def setup_and_run():
                     session.setup(libraries=libraries)
@@ -173,9 +176,10 @@ class MonolithManager:
 number_of_worker = 86
 task_queue_size = 256
 result_cache_size = 512
+mem_limit = '1g'
 
 app = Flask(__name__)
-app.manager = MonolithManager(number_of_worker=number_of_worker, queue_size=task_queue_size, result_cache_size=result_cache_size)
+app.manager = MonolithManager(number_of_worker=number_of_worker, queue_size=task_queue_size, result_cache_size=result_cache_size, mem_limit=mem_limit)
 app.logger.info(f"[Monolith Manager] Config: [number_of_worker = {number_of_worker}] [task_queue_size = {task_queue_size}] [result_cache_size = {result_cache_size}]")
 app.logger.info('=============================================')
 
