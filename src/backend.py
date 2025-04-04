@@ -133,15 +133,15 @@ class MonolithManager:
             
             # TODO(mingzhe): Move it to config
             container_configs = {
-                'mem_limit': '1g',
-                'mem_swappiness': 0,
-                'memswap_limit': '1g',
-                'oom_kill_disable': False,
+                'mem_limit': self.mem_limit,
+                'mem_swappiness': self.mem_swappiness,
+                'memswap_limit': self.memswap_limit,
+                'oom_kill_disable': self.oom_kill_disable,
                 'cpuset_cpus': str(worker_id)
             }
 
             # Consider making sandbox parameters configurable
-            with SandboxSession(lang=language, verbose=False, container_configs=self.container_configs) as session:
+            with SandboxSession(lang=language, verbose=False, container_configs=container_configs) as session:
                 @timeout_decorator.timeout(timeout, use_signals=False)
                 def setup_and_run():
                     session.setup(libraries=libraries)
