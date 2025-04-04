@@ -125,9 +125,18 @@ class MonolithManager:
             language = input_dict['language']
             timeout = min(input_dict.get('timeout', 30), 120)
             run_profiling = input_dict.get('run_memory_profile', False)
+            
+            container_configs = {
+                'mem_limit': '1g',
+                'mem_swappiness': 0,
+                'memswap_limit': '1g',
+                'oom_kill_disable': False,
+                'cpu_rt_runtime': 120000000,
+                'cpuset_cpus': str(worker_id)
+            }
 
             # Consider making sandbox parameters configurable
-            with SandboxSession(lang=language, verbose=False, container_configs={"mem_limit": "1g", "cpuset_cpus": str(worker_id)}) as session:
+            with SandboxSession(lang=language, verbose=False, container_configs=container_configs) as session:
                 @timeout_decorator.timeout(timeout, use_signals=False)
                 def setup_and_run():
                     session.setup(libraries=libraries)
