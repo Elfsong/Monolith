@@ -32,7 +32,7 @@ class SandboxDockerSession(Session):
         dockerfile: Optional[str] = None,
         lang: str = SupportedLanguage.PYTHON,
         keep_template: bool = False,
-        commit_container: bool = True,
+        commit_container: bool = False,
         verbose: bool = False,
         mounts: Optional[list[Mount]] = None,
         container_configs: Optional[dict] = None,
@@ -155,9 +155,7 @@ class SandboxDockerSession(Session):
                     raise ValueError("Invalid image type")
             else:
                 if self.verbose:
-                    print(
-                        f"Image {self.image.tags[-1]} is in use by other containers. Skipping removal.."
-                    )
+                    print(f"Image {self.image.tags[-1]} is in use by other containers. Skipping removal..")
 
     def setup(self, libraries=[]):
         self.execute_command('apt update')
