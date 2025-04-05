@@ -9,21 +9,33 @@ import uuid
 import queue
 import psutil
 import logging
+import objgraph
 import threading
+import tracemalloc
 import collections
 import timeout_decorator
 from typing import Any, Dict
 from llm_sandbox import SandboxSession
+from logging.handlers import RotatingFileHandler
 from flask import Flask, request, jsonify, redirect
 
+# Start Memory Tracing
+tracemalloc.start()
+
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO, 
-    format='%(asctime)s %(levelname)s: %(message)s', 
-    datefmt='%Y-%m-%d %H:%M:%S', 
-    filename='monolith.log', 
-    filemode='a'
+log_handler = RotatingFileHandler(
+    filename='monolith.log',
+    maxBytes=50 * 1024 * 1024,  # 50MB
+    backupCount=5
 )
+log_handler.setLevel(logging.INFO)
+log_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', '%Y-%m-%d %H:%M:%S')
+log_handler.setFormatter(log_formatter)
+
+logger = logging.getLogger()
+logger.handlers.clear()
+logger.setLevel(logging.INFO)
+logger.addHandler(log_handler)
 
 class MonolithManager:
     def __init__(self, number_of_worker, queue_size, result_cache_size, mem_limit):
@@ -45,7 +57,7 @@ class MonolithManager:
         app.logger.info(f'[+] Monolith (number of works = {self.number_of_worker}) is ready to accept tasks.')
         
         # Memory Monitoring
-        threading.Thread(target=self.monitor_memory_usage, args=(10,), daemon=True).start()
+        threading.Thread(target=self.monitor_memory_usage, args=(60,), daemon=True).start()
     
     def monitor_memory_usage(self, interval=10):
         while True:
@@ -53,6 +65,13 @@ class MonolithManager:
             total_gb = mem.total / (1024 ** 3)
             available_gb = mem.available / (1024 ** 3)
             app.logger.info(f"[Memory Monitor] Memory usage: {mem.percent}% (Total: {total_gb} GB, Available: {available_gb} GB)")
+            
+            snapshot = tracemalloc.take_snapshot()
+            top_stats = snapshot.statistics('lineno')
+            app.logger.info("[Memory Stats]")
+            for index, stat in enumerate(top_stats[:10]):
+                app.logger.info(f'{index} -> {stat}')
+            
             time.sleep(interval)
             
     def get_status(self) -> Dict[str, Any]:
@@ -128,7 +147,7 @@ class MonolithManager:
                 task_result.update(error_result)
                 with self.task_results_lock:
                     self.task_results[task_id] = task_result
-                app.logger.error(f'[!] Worker-{worker_id} encountered an error on processing task-{task_id}: {e}', exc_info=True)
+                app.logger.error(f'[!] Worker-{worker_id} encountered an error on processing task-{task_id}: {e}')
             finally:
                 self.task_clean(result_cache_limit=self.result_cache_size)
                 self.task_queue.task_done()
@@ -184,7 +203,7 @@ class MonolithManager:
 
 # Hyperparameters
 number_of_worker = 72
-task_queue_size = 256
+task_queue_size = 128
 result_cache_size = 128
 mem_limit = '1g'
 
