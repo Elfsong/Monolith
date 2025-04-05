@@ -52,10 +52,15 @@ class MonolithManager:
             mem = psutil.virtual_memory()
             total_gb = mem.total / (1024 ** 3)
             available_gb = mem.available / (1024 ** 3)
-            app.logger.info(f"[Memory Manager] Memory usage: {mem.percent}% (Total: {total_gb} GB, Available: {available_gb} GB)")
+            app.logger.info(f"[Memory Monitor] Memory usage: {mem.percent}% (Total: {total_gb} GB, Available: {available_gb} GB)")
             time.sleep(interval)
             
     def get_status(self) -> Dict[str, Any]:
+        mem = psutil.virtual_memory()
+        total_gb = mem.total / (1024 ** 3)
+        available_gb = mem.available / (1024 ** 3)
+        used_gb = mem.used / (1024 ** 3)
+            
         with self.task_results_lock:
             return {
                 'max_queue_size': self.task_queue.maxsize,
@@ -63,7 +68,13 @@ class MonolithManager:
                 'max_result_cache_size': self.result_cache_size,
                 'current_result_cache_size': len(self.task_results),
                 'number_of_worker': self.number_of_worker,
-                'worker_status': self.worker_status
+                'worker_status': self.worker_status,
+                'memory_usage': {
+                    'total': total_gb,
+                    'used_gb': used_gb,
+                    'available': available_gb,
+                    'percent': mem.percent
+                },
             }
     
     def task_clean(self, result_cache_limit) -> None:
@@ -146,7 +157,6 @@ class MonolithManager:
                 def setup_and_run():
                     session.setup(libraries=libraries)
                     result = session.run(code=code, run_profiling=run_profiling)
-                    app.logger.info(f'[Monolith Manager] Worker-{worker_id} finished task-{task_result["task_id"]}.')
                     return result
 
                 result = setup_and_run()
@@ -175,7 +185,7 @@ class MonolithManager:
 # Hyperparameters
 number_of_worker = 72
 task_queue_size = 256
-result_cache_size = 512
+result_cache_size = 128
 mem_limit = '1g'
 
 app = Flask(__name__)
@@ -189,16 +199,35 @@ def handle_execute():
     uuid_str = str(uuid.uuid4())
     app.logger.info(f'[Monolith Manager] Received an execute request: {input_dict}, Task ID: {uuid_str}, Current Queue Size: {app.manager.task_queue.qsize()}')
 
-    if not input_dict or 'code' not in input_dict:
-        return jsonify({'error': 'No code provided', 'status': 'error'}), 400
+    response = {
+        'task_id': uuid_str,
+        'status': 'error',
+        'error': 'unknown',
+    }
     
     try:
+        # Validate the input
+        if not input_dict or 'code' not in input_dict:
+            raise ValueError('No code provided')
+        # Submit the task 
         app.manager.submit_task(uuid_str, input_dict)
+        response['status'] = 'processing'
+        response['error'] = None
         app.logger.info(f'[Monolith Manager] Task [{uuid_str}] is added to the task queue.')
+    except ValueError as e:
+        response['status'] = 'error'
+        response['error'] = str(e)
+        app.logger.error(f'[Monolith Manager] Error: {response["error"]}')
     except queue.Full:
-        return jsonify({'error': 'Task queue is full. Try again later.', 'status': 'error'}), 503
-
-    return jsonify({'task_id': uuid_str}), 200
+        response['status'] = 'error'
+        response['error'] = 'Task queue is full'
+        app.logger.error(f'[Monolith Manager] Error: {response["error"]}')
+    except Exception as e:  
+        response['status'] = 'error'
+        response['error'] = logging.exception(e)
+        app.logger.error(f'[Monolith Manager] Error: {response["error"]}')
+    finally:
+        return jsonify(response), 503 if response['status'] == 'error' else 200
 
 @app.route('/results/<task_id>', methods=['GET'])
 def get_result(task_id):
