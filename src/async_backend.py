@@ -25,7 +25,7 @@ tracemalloc.start()
 # Set up logging
 log_handler = RotatingFileHandler(
     filename='monolith.log',
-    maxBytes=50 * 1024 * 1024,  # 50MB
+    maxBytes=100 * 1024 * 1024,  # 50MB
     backupCount=5
 )
 log_handler.setLevel(logging.INFO)
@@ -53,26 +53,8 @@ class MonolithManager:
         # Worker Initialization
         for worker_index in range(self.number_of_worker):
             app.logger.info(f'[+] Creating Worker-{worker_index}...')
-            threading.Thread(target=self.task_assign, args=(worker_index,), daemon=True).start()
+            threading.Thread(target=self.task_assign, args=(worker_index,)).start()
         app.logger.info(f'[+] Monolith (number of works = {self.number_of_worker}) is ready to accept tasks.')
-        
-        # Memory Monitoring
-        threading.Thread(target=self.monitor_memory_usage, args=(60,), daemon=True).start()
-    
-    def monitor_memory_usage(self, interval=10):
-        while True:
-            mem = psutil.virtual_memory()
-            total_gb = mem.total / (1024 ** 3)
-            available_gb = mem.available / (1024 ** 3)
-            app.logger.info(f"[Memory Monitor] Memory usage: {mem.percent}% (Total: {total_gb} GB, Available: {available_gb} GB)")
-            
-            snapshot = tracemalloc.take_snapshot()
-            top_stats = snapshot.statistics('lineno')
-            app.logger.info("[Memory Stats]")
-            for index, stat in enumerate(top_stats[:10]):
-                app.logger.info(f'{index} -> {stat}')
-            
-            time.sleep(interval)
             
     def get_status(self) -> Dict[str, Any]:
         mem = psutil.virtual_memory()
@@ -170,21 +152,21 @@ class MonolithManager:
                 'cpuset_cpus': str(worker_id)
             }
 
-            # Consider making sandbox parameters configurable
             with SandboxSession(lang=language, verbose=False, container_configs=container_configs) as session:
-                @timeout_decorator.timeout(timeout, use_signals=False)
-                def setup_and_run():
-                    session.setup(libraries=libraries)
-                    result = session.run(code=code, run_profiling=run_profiling)
-                    return result
+                try:
+                    @timeout_decorator.timeout(timeout, use_signals=False)
+                    def setup_and_run():
+                        session.setup(libraries=libraries)
+                        result = session.run(code=code, run_profiling=run_profiling)
+                        return result
 
-                result = setup_and_run()
-                task_result['output_dict'] = result
-                task_result['status'] = 'done'
-                
-        except timeout_decorator.timeout_decorator.TimeoutError:
-            task_result['status'] = 'timeout'
-            task_result['output_dict'] = {'error': 'Timeout reached.'}
+                    result = setup_and_run()
+                    task_result['output_dict'] = result
+                    task_result['status'] = 'done'
+                except timeout_decorator.timeout_decorator.TimeoutError:
+                    session.kill()
+                    task_result['status'] = 'timeout'
+                    task_result['output_dict'] = {'error': 'Timeout reached.'}
         except Exception as e:
             task_result['status'] = 'error'
             task_result['output_dict'] = {'error': str(e), 'traceback': logging.exception(e)}

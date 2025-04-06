@@ -121,6 +121,7 @@ class SandboxDockerSession(Session):
             detach=True,
             tty=True,
             mounts=self.mounts,
+            auto_remove=True,
             **self.container_configs if self.container_configs else {},
         )
         
@@ -154,9 +155,16 @@ class SandboxDockerSession(Session):
                 else:
                     raise ValueError("Invalid image type")
             else:
-                if self.verbose:
-                    print(f"Image {self.image.tags[-1]} is in use by other containers. Skipping removal..")
+                raise ValueError("Image is in use by another container.")
 
+    def kill(self):
+        if self.container:
+            self.container.kill()
+            self.container.remove(force=True)
+            self.container = None
+            if self.verbose:
+                print("Container has been forcefully killed and removed.")
+                
     def setup(self, libraries=[]):
         self.execute_command('apt update')
         self.execute_command('apt install time')
