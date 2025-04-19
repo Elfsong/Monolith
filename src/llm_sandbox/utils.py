@@ -103,7 +103,7 @@ def get_code_execution_command(lang: str, code_file: str, run_profiling: bool) -
     if run_profiling:
         commands[-1] = f"/tmp/memory_profiler.sh {commands[-1]}"
     else:
-        commands.append(f"/usr/bin/time -v {commands[-1]}")
+        commands[-1] = f"/usr/bin/time -v {commands[-1]}"
     
     return commands
 
