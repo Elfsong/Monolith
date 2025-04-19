@@ -125,7 +125,7 @@ class SandboxDockerSession(Session):
             **self.container_configs if self.container_configs else {},
         )
         
-        self.setup(libraries=[])
+        self.setup(libraries=[], run_profiling=True)
 
     def close(self):
         if self.container:
@@ -165,9 +165,10 @@ class SandboxDockerSession(Session):
             if self.verbose:
                 print("Container has been forcefully killed and removed.")
                 
-    def setup(self, libraries=[]):
-        self.execute_command('apt update')
-        self.execute_command('apt install time')
+    def setup(self, libraries=[], run_profiling=False):
+        if not run_profiling:
+            self.execute_command('apt update')
+            self.execute_command('apt install time')
 
         if self.lang.upper() in NotSupportedLibraryInstallation and libraries != []:
             raise ValueError(f"Library installation has not been supported for {self.lang} yet!")

@@ -110,7 +110,7 @@ def task_process(input_dict: dict, cpu_core_id: int, task_id: str) -> dict:
 
         @timeout_decorator.timeout(timeout, use_signals=False)
         def setup_and_run(libraries, code, stdin, run_profiling):
-            session.setup(libraries=libraries)
+            session.setup(libraries=libraries, run_profiling=run_profiling)
             return session.run(code=code, stdin=stdin, run_profiling=run_profiling)
 
         try:
