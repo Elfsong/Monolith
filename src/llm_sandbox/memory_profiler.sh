@@ -12,9 +12,13 @@ CMD=("$@")
 # Set log name
 LOG_FILE="mem_usage.log"
 
+exec 3<&0
+exec </dev/null
+
 # Get PID
-"${CMD[@]}" &
+"${CMD[@]}" <&3 & 
 PID=$!
+exec 3<&-   
 
 while kill -0 "$PID" 2>/dev/null; do
     timestamp_ns=$(date +%s%N)
@@ -25,7 +29,6 @@ while kill -0 "$PID" 2>/dev/null; do
     fi
     
     echo "$timestamp_ns $rss_kb" >> "$LOG_FILE"
-    # sleep 0.00001 # <-------------------------- Sampling Rate Control  
 done
 
 # 5. Wait PID finish

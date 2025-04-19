@@ -71,7 +71,6 @@ def get_code_file_extension(lang: str) -> str:
     else:
         raise ValueError(f"Language {lang} is not supported")
 
-
 def get_code_execution_command(lang: str, code_file: str, run_profiling: bool, stdin: str) -> list:
     """
     Return the execution command for the given language and code file.
@@ -110,7 +109,6 @@ def get_code_execution_command(lang: str, code_file: str, run_profiling: bool, s
         commands[-1] = f"bash -c '{commands[-1]} < /tmp/stdin'"
     
     return commands
-
 
 def parse_time_v_output(time_v_text: str) -> dict:
     """
