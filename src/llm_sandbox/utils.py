@@ -79,40 +79,33 @@ def get_code_execution_command(lang: str, code_file: str, run_profiling: bool) -
     :param code_file: Path to the code file
     :return: List of execution commands
     """
-    if run_profiling:
-        if lang == SupportedLanguage.PYTHON:
-            return [f"/tmp/memory_profiler.sh python {code_file}"]
-        elif lang == SupportedLanguage.JAVA:
-            return [f"/tmp/memory_profiler.sh java {code_file}"]
-        elif lang == SupportedLanguage.JAVASCRIPT:
-            return [f"/tmp/memory_profiler.sh node {code_file}"]
-        elif lang == SupportedLanguage.CPP:
-            return [f"g++ -o a.out {code_file}", "/tmp/memory_profiler.sh ./a.out"]
-        elif lang == SupportedLanguage.GO:
-            return [f"/tmp/memory_profiler.sh go run {code_file}"]
-        elif lang == SupportedLanguage.RUBY:
-            return [f"/tmp/memory_profiler.sh ruby {code_file}"]
-        elif lang == SupportedLanguage.RUST:
-            return [f'mv src/code.rs src/main.rs', f"/tmp/memory_profiler.sh cargo run"]
-        else:
-            raise ValueError(f"Language {lang} is not supported")
+    commands = list()
+    
+    if lang == SupportedLanguage.PYTHON:
+        commands.append(f"python {code_file}")
+    elif lang == SupportedLanguage.JAVA:
+        commands.append(f"java {code_file}")
+    elif lang == SupportedLanguage.JAVASCRIPT:
+        commands.append(f"node {code_file}")
+    elif lang == SupportedLanguage.CPP:
+        commands.append(f"g++ -o a.out {code_file}")
+        commands.append(f"./a.out")
+    elif lang == SupportedLanguage.GO:
+        commands.append(f"go run {code_file}")
+    elif lang == SupportedLanguage.RUBY:
+        commands.append(f"ruby {code_file}")
+    elif lang == SupportedLanguage.RUST:
+        commands.append(f'mv src/code.rs src/main.rs')
+        commands.append(f"cargo run")
     else:
-        if lang == SupportedLanguage.PYTHON:
-            return [f"/usr/bin/time -v python {code_file}"]
-        elif lang == SupportedLanguage.JAVA:
-            return [f"/usr/bin/time -v java {code_file}"]
-        elif lang == SupportedLanguage.JAVASCRIPT:
-            return [f"/usr/bin/time -v node {code_file}"]
-        elif lang == SupportedLanguage.CPP:
-            return [f"g++ -o a.out {code_file}", "/usr/bin/time -v ./a.out"]
-        elif lang == SupportedLanguage.GO:
-            return [f"/usr/bin/time -v go run {code_file}"]
-        elif lang == SupportedLanguage.RUBY:
-            return [f"/usr/bin/time -v ruby {code_file}"]
-        elif lang == SupportedLanguage.RUST:
-            return [f'mv src/code.rs src/main.rs', f"/usr/bin/time -v cargo run"]
-        else:
-            raise ValueError(f"Language {lang} is not supported")
+        raise ValueError(f"Language {lang} is not supported")
+    
+    if run_profiling:
+        commands[-1] = f"/tmp/memory_profiler.sh {commands[-1]}"
+    else:
+        commands.append(f"/usr/bin/time -v {commands[-1]}")
+    
+    return commands
 
 
 def parse_time_v_output(time_v_text: str) -> dict:
