@@ -214,6 +214,7 @@ class SandboxDockerSession(Session):
                 f.write(code)
             
             with open(stdin_source_path, "w") as f:
+                stdin = "" if stdin is None else stdin
                 f.write(stdin)
 
             self.copy_to_runtime(code_source_path, code_dest_path)
