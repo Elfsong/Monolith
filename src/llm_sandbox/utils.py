@@ -72,7 +72,7 @@ def get_code_file_extension(lang: str) -> str:
         raise ValueError(f"Language {lang} is not supported")
 
 
-def get_code_execution_command(lang: str, code_file: str, run_profiling: bool) -> list:
+def get_code_execution_command(lang: str, code_file: str, run_profiling: bool, stdin: str) -> list:
     """
     Return the execution command for the given language and code file.
     :param lang: Language of the code
@@ -100,10 +100,14 @@ def get_code_execution_command(lang: str, code_file: str, run_profiling: bool) -
     else:
         raise ValueError(f"Language {lang} is not supported")
     
+    # Add memory profiler if run_profiling is True. Otherwise, add GNU time verbose mode.
     if run_profiling:
         commands[-1] = f"/tmp/memory_profiler.sh {commands[-1]}"
     else:
         commands[-1] = f"/usr/bin/time -v {commands[-1]}"
+        
+    if stdin:
+        commands[-1] = f"bash -c '{commands[-1]} < /tmp/stdin'"
     
     return commands
 

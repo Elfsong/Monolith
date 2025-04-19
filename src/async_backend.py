@@ -142,7 +142,7 @@ class MonolithManager:
             language = input_dict['language']
             timeout = min(input_dict.get('timeout', 30), 120)
             run_profiling = input_dict.get('run_memory_profile', False)
-            
+            stdin = input_dict.get('stdin', None)
             # TODO(mingzhe): Move it to config
             container_configs = {
                 'mem_limit': self.mem_limit,
@@ -157,7 +157,7 @@ class MonolithManager:
                     @timeout_decorator.timeout(timeout, use_signals=False)
                     def setup_and_run():
                         session.setup(libraries=libraries)
-                        result = session.run(code=code, run_profiling=run_profiling)
+                        result = session.run(code=code, stdin=stdin, run_profiling=run_profiling)
                         return result
 
                     result = setup_and_run()

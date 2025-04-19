@@ -189,13 +189,14 @@ class SandboxDockerSession(Session):
                 command = get_libraries_installation_command(self.lang, library)
                 _ = self.execute_command(command)
 
-    def run(self, code: str, run_profiling=False, *args, **kwargs) -> ConsoleOutput:
+    def run(self, code: str, stdin: str, run_profiling=False, *args, **kwargs) -> ConsoleOutput:
         if not self.container:
             raise RuntimeError("Session is not open. Please call open() method before running code.")
 
         with tempfile.TemporaryDirectory() as directory_name:
             # Source Path
             code_source_path = os.path.join(directory_name, f"code.{get_code_file_extension(self.lang)}")
+            stdin_source_path = os.path.join(directory_name, f"stdin")
             profiler_source_path = './llm_sandbox/memory_profiler.sh'
             
             # Destination Path
@@ -206,15 +207,20 @@ class SandboxDockerSession(Session):
             else:
                 code_dest_path = f"/tmp/code.{get_code_file_extension(self.lang)}"
             profiler_dest_path = "/tmp/memory_profiler.sh"
-
+            stdin_dest_path = "/tmp/stdin"
+            
             with open(code_source_path, "w") as f:
                 f.write(code)
+            
+            with open(stdin_source_path, "w") as f:
+                f.write(stdin)
 
             self.copy_to_runtime(code_source_path, code_dest_path)
             self.copy_to_runtime(profiler_source_path, profiler_dest_path)
-
+            self.copy_to_runtime(stdin_source_path, stdin_dest_path)
+            
             output = ConsoleOutput()
-            commands = get_code_execution_command(self.lang, code_dest_path, run_profiling=run_profiling)
+            commands = get_code_execution_command(self.lang, code_dest_path, run_profiling=run_profiling, stdin=stdin)
             
             for index, command in enumerate(commands):
                 if self.lang == SupportedLanguage.GO:

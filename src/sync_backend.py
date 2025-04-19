@@ -64,7 +64,7 @@ def handle_execute():
         
         # Metadata
         task_id = str(uuid.uuid4())
-        logger.info(f"[+] Worker-{worker_id} is processing the request ({task_id}) on CPU-{cpu_core_id}")
+        logger.info(f"[+] Worker-{worker_id} is processing the request ({task_id}) on CPU-{cpu_core_id}: {input_dict}")
         
         # Task Execution
         response = task_process(input_dict, cpu_core_id, task_id)
@@ -83,6 +83,7 @@ def task_process(input_dict: dict, cpu_core_id: int, task_id: str) -> dict:
     language = input_dict['language']
     timeout = min(input_dict.get('timeout', 30), 120)
     run_profiling = input_dict.get('run_profiling', False)
+    stdin = input_dict.get('stdin', None)
     
     # Docker Container Configuration
     container_configs = {
@@ -108,12 +109,12 @@ def task_process(input_dict: dict, cpu_core_id: int, task_id: str) -> dict:
         logger.info(f"[+] Worker-{worker_id} created a new session container {session.container.name}")
 
         @timeout_decorator.timeout(timeout, use_signals=False)
-        def setup_and_run(libraries, code, run_profiling):
+        def setup_and_run(libraries, code, stdin, run_profiling):
             session.setup(libraries=libraries)
-            return session.run(code=code, run_profiling=run_profiling)
+            return session.run(code=code, stdin=stdin, run_profiling=run_profiling)
 
         try:
-            result = setup_and_run(libraries, code, run_profiling)
+            result = setup_and_run(libraries, code, stdin, run_profiling)
             response['output_dict'] = result
             response['status'] = 'success'
         except TimeoutError:
