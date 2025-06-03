@@ -38,31 +38,24 @@ pip install monolith-lib
 ```
 
 ```python
-import time
-from monolith import monolith
+import requests
+import json
 
-monolith = monolith.Monolith(backend_url='https://monolith.cool')
+url = "http://35.223.191.143:8000/execute"
 
-# 1) Submit code to Monolith (POST)
-post_response = monolith.post_code_submit(
-    lang = 'python',
-    libs = ['numpy'],
-    code = 'print("Hello, World!")',
-    timeout = 30,
-    profiling = False
-)
+payload = json.dumps({
+    "language": "python",
+    "code": "import time\nprint('hello')",
+    "libraries": [],
+    "timeout": 10
+})
+headers = {
+    'Content-Type': 'application/json'
+}
 
-# 2) Get async task_id from POST response
-task_id = post_response['task_id']
+response = requests.request("POST", url, headers=headers, data=payload)
 
-# 3) Do something else (optional)
-monolith_status = monolith.get_result()
-print(monolith_status)
-time.sleep(5)
-
-# 4) Get the code result from Monolith (GET)
-response = monolith.get_code_result(task_id)
-print(response)
+print(response.text)
 ```
 
 # 🚧 Deploy Your Own Monolith
