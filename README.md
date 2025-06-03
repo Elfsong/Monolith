@@ -68,9 +68,13 @@ print(response)
 # 🚧 Deploy Your Own Monolith
 ```shell
 # Install Docker on your machine
-https://docs.docker.com/engine/install/
+# Refer to https://docs.docker.com/engine/install/
+sudo docker run hello-world
 
 # Set you docker as rootless or add your account into the docker group.
 sudo usermod -aG docker $USER
 newgrp docker
+
+# Turn the Monolith On
+./sync_start.sh
 ```
