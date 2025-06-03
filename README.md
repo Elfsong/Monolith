@@ -64,27 +64,12 @@ response = monolith.get_code_result(task_id)
 print(response)
 ```
 
-# 🚧 Do It Yourself
-- ⬆️ **Task Request (Async POST) -> task_id :**
-```python
-import requests
+# 🚧 Deploy Your Own Monolith
+```shell
+# Install Docker on your machine
+https://docs.docker.com/engine/install/
 
-data = {
-  'language': "python",
-  'code': "print('Hello World')",
-  'libraries': ['numpy'],
-  'timeout': 30,
-  'run_memory_profile': True
-}
-
-response = requests.post('https://monolith.cool/execute', json=data)
-task_id = response.json()['task_id']
-print(task_id)
-```
-
-- ⬇️ **Result Request (Sync GET) <- task_id:**
-```python
-import requests
-response = requests.get(f'https://monolith.cool/results/{task_id}')
-print(response.json())
+# Set you docker as rootless or add your account into the docker group.
+sudo usermod -aG docker $USER
+newgrp docker
 ```

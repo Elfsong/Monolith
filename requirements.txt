@@ -2,3 +2,6 @@ gunicorn
 flask
 timeout_decorator
 llm-sandbox
+psutil
+docker
+kubernetes
