@@ -32,11 +32,6 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 
 > If you're just curious, you can try it out on [our live demo 🌐](https://huggingface.co/spaces/Elfsong/Monolith)
 
-```bash
-# Install the library
-pip install monolith-lib
-```
-
 ```python
 import requests
 import json
