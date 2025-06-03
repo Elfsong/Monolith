@@ -77,4 +77,7 @@ newgrp docker
 
 # Turn the Monolith On
 ./sync_start.sh
+
+# Observer the Monolith Log
+vim Monolith/src/monolith.log
 ```
