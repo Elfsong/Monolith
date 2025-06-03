@@ -68,4 +68,21 @@ newgrp docker
 
 # Observer the Monolith Log
 vim Monolith/src/monolith.log
+
+# Deploy Nginx
+
+# Modify Nginx
+vim /etc/nginx/sites-available/default
+
+location / {
+    # First attempt to serve request as file, then
+    # as directory, then fall back to displaying a 404.
+    proxy_pass http://127.0.0.1:8000;  # Forward to Gunicorn or another service running on port 8000
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# SSL Certbot
 ```
