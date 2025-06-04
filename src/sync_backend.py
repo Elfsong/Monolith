@@ -39,6 +39,7 @@ logger.info(f"[+] Worker-{worker_id} started on CPU-{cpu_core_id}.")
 
 @app.route('/')
 def index():
+    logger.info(f"[+] Worker-{worker_id} received a request to index.")
     return redirect("https://huggingface.co/spaces/Elfsong/Monolith", code=302)
 
 @app.errorhandler(Exception)

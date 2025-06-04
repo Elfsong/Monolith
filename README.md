@@ -70,13 +70,9 @@ newgrp docker
 vim Monolith/src/monolith.log
 
 # Deploy Nginx
-
-# Modify Nginx
 vim /etc/nginx/sites-available/default
 
-location / {
-    # First attempt to serve request as file, then
-    # as directory, then fall back to displaying a 404.
+location {
     proxy_pass http://127.0.0.1:8000;  # Forward to Gunicorn on port 8000
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -84,5 +80,9 @@ location / {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 
+sudo systemctl restart nginx
+
 # SSL Certbot
+pip install certbot certbot-nginx
+sudo certbot --nginx
 ```
