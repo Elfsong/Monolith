@@ -36,7 +36,7 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 import requests
 import json
 
-url = "http://35.223.191.143:8000/execute"
+url = "http://monolith.cool/execute"
 
 payload = json.dumps({
     "language": "python",
