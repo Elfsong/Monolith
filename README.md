@@ -55,7 +55,7 @@ print(response.text)
 
 # 🚧 Deploy Your Own Monolith
 ```shell
-# Install Docker on your machine
+# Step 0) Install Docker on your machine
 # Refer to https://docs.docker.com/engine/install/
 sudo docker run hello-world
 
@@ -63,13 +63,13 @@ sudo docker run hello-world
 sudo usermod -aG docker $USER
 newgrp docker
 
-# Turn the Monolith On
+# Step 1) Turn the Monolith On (it runs on port 8000 by default)
 ./sync_start.sh
 
-# Observer the Monolith Log (Check if there are any errors)
+# Step 2) Observer the Monolith Log (check if there are any errors)
 vim Monolith/src/monolith.log
 
-# Reverse Forward using Nginx (optional but recommended)
+# Step 3) Reverse Forward using Nginx (optional but recommended)
 vim /etc/nginx/sites-available/default
 
 location {
@@ -82,7 +82,7 @@ location {
 
 sudo systemctl restart nginx
 
-# SSL Certbot
+# Step 4) SSL Certbot (if you are going to host SSL)
 pip install certbot certbot-nginx
 sudo certbot --nginx
 ```
