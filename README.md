@@ -66,10 +66,10 @@ newgrp docker
 # Turn the Monolith On
 ./sync_start.sh
 
-# Observer the Monolith Log
+# Observer the Monolith Log (Check if there are any errors)
 vim Monolith/src/monolith.log
 
-# Deploy Nginx
+# Reverse Forward using Nginx (optional but recommended)
 vim /etc/nginx/sites-available/default
 
 location {
