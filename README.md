@@ -24,6 +24,7 @@ Monolith is a high-precision code efficiency benchmarking environment. Designed 
 - ✅ Supports scalable worker processes for high-performance benchmarking
 
 # 💭 Updates
+- **2025 / 07 / 01:** Finally, we clean up the code and it should be very easy to deploy your own Monolith now 🎉
 - **2025 / 06 / 01:** We updated the document.
 - **2025 / 04 / 04:** Zombie Thread! We implemented a sync backend instead.
 - **2025 / 04 / 02:** We met a memory leakage issue and finally figured out it was caused by Gunicorn forks.
